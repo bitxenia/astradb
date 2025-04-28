@@ -40,4 +40,9 @@ export interface AstraDb {
    * Retrieves all values associated with a key in the AstraDb.
    */
   get: (key: string) => Promise<string>;
+
+  /**
+   * Retrieves all keys in the AstraDb.
+   */
+  getAllKeys: () => Promise<string[]>;
 }
