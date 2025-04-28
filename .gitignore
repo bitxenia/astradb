@@ -1,0 +1,16 @@
+node_modules
+build
+built
+dist
+.docs
+.coverage
+node_modules
+yarn.lock
+.vscode
+.tmp-compiled-docs
+tsconfig-doc-check.aegir.json
+
+data
+orbitdb
+*.log
+config.json
