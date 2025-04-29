@@ -1,5 +1,5 @@
 import { OrbitDB } from "@orbitdb/core";
-import { Database } from "./database.js";
+import { Database, SyncTimeoutError } from "./database.js";
 
 export class KeyRepository {
   dbName: string;
@@ -25,9 +25,13 @@ export class KeyRepository {
       try {
         await this.keyDb.openDatabase(this.dbName);
       } catch (error) {
-        // If we are not a collaborator and the db did not sync with the providers,
-        // We throw an error because a non collaborator node cannot create a new astradb.
-        throw Error(`No providers found for the key repository database`);
+        if (error instanceof SyncTimeoutError) {
+          // If we are not a collaborator and the db did not sync with the providers,
+          // We throw an error because a non collaborator node cannot create a new astradb.
+          throw Error(`No providers found for the key repository database`);
+        } else {
+          throw error;
+        }
       }
     } else {
       // If we are not a collaborator, we create a new database,

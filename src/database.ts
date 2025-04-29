@@ -6,7 +6,7 @@ import {
   LRUStorage,
 } from "@orbitdb/core";
 
-class SyncTimeoutError extends Error {
+export class SyncTimeoutError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SyncTimeoutError";
