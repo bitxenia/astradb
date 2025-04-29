@@ -20,8 +20,8 @@ export class KeyRepository {
   public async init(): Promise<void> {
     this.keyDb = new Database(this.orbitdb);
 
-    if (this.isCollaborator) {
-      // If we are a collaborator, we open an existing database which sincronizes with the providers.
+    if (!this.isCollaborator) {
+      // If we are not a collaborator, we open an existing database which sincronizes with the providers.
       try {
         await this.keyDb.openDatabase(this.dbName);
       } catch (error) {
@@ -34,7 +34,7 @@ export class KeyRepository {
         }
       }
     } else {
-      // If we are not a collaborator, we create a new database,
+      // If we are a collaborator, we create a new database,
       // because it is not necessary to sync with the providers immediately.
       await this.keyDb.createDatabase(this.dbName);
     }

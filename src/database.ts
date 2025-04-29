@@ -40,7 +40,7 @@ export class Database {
   }
 
   public async openDatabase(dbName: string) {
-    this.openDb = await this.createDatabase(dbName);
+    await this.createDatabase(dbName);
     await this.syncDb();
   }
 
