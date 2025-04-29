@@ -82,11 +82,14 @@ export class KeyRepository {
     } else {
       // If we are not replicating the key, we open the value database.
       valueDb = new Database(this.orbitdb);
+      // TODO: Find a better protocol to name the valueDb, current protocol:
+      // "<keyDbName>::<ValueDbName>"
+      const valueDbName = `${this.dbName}::${key}`;
       if (existing) {
         // If the database already exists, we open it and sync it.
-        await valueDb.openDatabase(key);
+        await valueDb.openDatabase(valueDbName);
       } else {
-        await valueDb.createDatabase(key);
+        await valueDb.createDatabase(valueDbName);
       }
 
       // TODO: The new database needs to stay accessible for the collaborators to replicate it.
