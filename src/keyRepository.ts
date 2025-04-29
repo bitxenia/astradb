@@ -1,5 +1,5 @@
 import { OrbitDB } from "@orbitdb/core";
-import { Database } from "./database";
+import { Database } from "./database.js";
 
 export class KeyRepository {
   dbName: string;
