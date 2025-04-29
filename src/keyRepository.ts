@@ -61,7 +61,7 @@ export class KeyRepository {
 
     // We append the value to the value database.
     await valueDb.openDb.add(value);
-    console.log(`Value ${value} appended to the key ${key}`);
+    console.log(`New value appended to the key ${key}`);
   }
 
   public async get(key: string): Promise<string[]> {
@@ -70,8 +70,14 @@ export class KeyRepository {
     }
     const valueDb = await this.getValueDb(key, true);
 
-    // We get the value from the value database.
-    return await valueDb.openDb.all();
+    // We get all the values from the value database.
+    const values = await valueDb.openDb.all();
+
+    // We convert the values to strings.
+    const stringValues = values.map((value) => {
+      return value.value;
+    });
+    return stringValues;
   }
 
   public async getAllKeys(): Promise<string[]> {
@@ -138,7 +144,11 @@ export class KeyRepository {
       const valueDb = new Database(this.orbitdb);
       // Init new becuase we do not need to sync the database now.
       // TODO: See if we need to sync it.
-      await valueDb.createDatabase(keyName);
+
+      // TODO: Find a better protocol to name the valueDb, current protocol:
+      // "<keyDbName>::<ValueDbName>"
+      const valueDbName = `${this.dbName}::${keyName}`;
+      await valueDb.createDatabase(valueDbName);
       this.keyDbs.set(keyName, valueDb);
       console.log(`Key ${keyName} replicated`);
     }
