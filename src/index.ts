@@ -93,9 +93,9 @@ export interface AstraDb {
   add: (key: string, value: string) => Promise<void>;
 
   /**
-   * Retrieves the value associated with a key in the AstraDb.
+   * Retrieves all the value associated with a key in the AstraDb.
    */
-  get: (key: string) => Promise<string>;
+  get: (key: string) => Promise<string[]>;
 
   /**
    * Retrieves all keys in the AstraDb.

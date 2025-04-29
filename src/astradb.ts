@@ -44,7 +44,7 @@ export class AstraDbNode implements AstraDb {
     await this.keyRepository.add(key, value);
   }
 
-  public async get(key: string): Promise<string> {
+  public async get(key: string): Promise<string[]> {
     // Get the value from the key repository.
     return await this.keyRepository.get(key);
   }

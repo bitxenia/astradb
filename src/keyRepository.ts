@@ -60,7 +60,7 @@ export class KeyRepository {
     console.log(`Value ${value} appended to the key ${key}`);
   }
 
-  public async get(key: string): Promise<string> {
+  public async get(key: string): Promise<string[]> {
     if (!this.keys.has(key)) {
       throw new Error(`Key ${key} does not exist`);
     }
