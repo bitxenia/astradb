@@ -1,6 +1,6 @@
 {
   "name": "@bitxenia/astradb",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Database for astrawiki & astrachat ipfs using orbitdb & libp2p",
   "author": "Bitxenia",
   "license": "MIT",
