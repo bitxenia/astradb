@@ -7,6 +7,7 @@ import type { Blockstore } from "interface-blockstore";
 import type { Datastore } from "interface-datastore";
 import { MemoryBlockstore } from "blockstore-core";
 import { MemoryDatastore } from "datastore-core";
+import EventEmitter from "events";
 
 /**
  * Options used to create an AstraDb.
@@ -137,4 +138,27 @@ export interface AstraDb {
    * Retrieves all keys in the AstraDb.
    */
   getAllKeys: () => Promise<string[]>;
+
+  /**
+   * Events emitted by the AstraDb.
+   *
+   * It can be used to listen for key append events.
+   *
+   * Events are emitted only for keys that were fetched from the database.
+   *
+   * To listen for events, you can use the `on` method of the EventEmitter.
+   *
+   * The event name is in the format `{dbname}::{key}`.
+   *
+   * @example
+   * ```typescript
+   * const astraDb = await createAstraDb({ dbName: "mydb" });
+   * const values = await astraDb.get("exampleKey");
+   * astraDb.events.on("mydb::exampleKey", async (value) => {
+   *  console.log(`New value for exampleKey: ${value}`);
+   * });
+   *
+   *
+   */
+  events: EventEmitter;
 }

@@ -2,14 +2,17 @@ import { ConnectionManager } from "./connectionManager.js";
 import { AstraDb, AstraDbInit } from "./index.js";
 import { startOrbitDb } from "./utils/startOrbitdb.js";
 import { KeyRepository } from "./keyRepository.js";
+import EventEmitter from "events";
 
 export class AstraDbNode implements AstraDb {
   dbName: string;
   private connectionManager: ConnectionManager;
   private keyRepository: KeyRepository;
+  events: EventEmitter;
 
   constructor(dbName: string) {
     this.dbName = dbName;
+    this.events = new EventEmitter();
   }
 
   public async init(initOptions: AstraDbInit): Promise<void> {
@@ -28,7 +31,8 @@ export class AstraDbNode implements AstraDb {
     this.keyRepository = new KeyRepository(
       this.dbName,
       orbitdb,
-      initOptions.isCollaborator
+      initOptions.isCollaborator,
+      this.events
     );
     await this.keyRepository.init();
   }

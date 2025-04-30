@@ -1,5 +1,6 @@
 import { OrbitDB } from "@orbitdb/core";
-import { Database, SyncTimeoutError } from "./database.js";
+import { Database } from "./database.js";
+import EventEmitter from "events";
 
 export class KeyRepository {
   dbName: string;
@@ -8,53 +9,50 @@ export class KeyRepository {
   keyDb: Database;
   keys: Set<string>;
   keyDbs: Map<string, Database>;
+  events: EventEmitter;
 
-  constructor(dbName: string, orbitdb: OrbitDB, isCollaborator: boolean) {
+  constructor(
+    dbName: string,
+    orbitdb: OrbitDB,
+    isCollaborator: boolean,
+    events: EventEmitter
+  ) {
     this.dbName = dbName;
     this.orbitdb = orbitdb;
     this.isCollaborator = isCollaborator;
     this.keys = new Set<string>();
     this.keyDbs = new Map<string, Database>();
+    this.events = events;
   }
 
   public async init(): Promise<void> {
-    this.keyDb = new Database(this.orbitdb);
+    this.keyDb = new Database(
+      this.dbName,
+      this.orbitdb,
+      this.events,
+      this.newKeyAdded.bind(this)
+    );
 
     if (!this.isCollaborator) {
       // If we are not a collaborator, we open an existing database which sincronizes with the providers.
-      try {
-        await this.keyDb.openDatabase(this.dbName);
-      } catch (error) {
-        if (error instanceof SyncTimeoutError) {
-          // If we are not a collaborator and the db did not sync with the providers,
-          // We throw an error because a non collaborator node cannot create a new astradb.
-          throw Error(`No providers found for the key repository database`);
-        } else {
-          throw error;
-        }
+      const synced = await this.keyDb.initExisting();
+      if (!synced) {
+        // If we are not a collaborator and the db did not sync with the providers,
+        // We throw an error because a non collaborator node cannot create a new astradb.
+        throw Error(`No providers found for the key repository database`);
       }
     } else {
       // If we are a collaborator, we create a new database,
       // because it is not necessary to sync with the providers immediately.
-      await this.keyDb.createDatabase(this.dbName);
+      await this.keyDb.initNew();
     }
-
-    // We update the repository with the keys that are already in the database.
-    await this.updateRepository();
-
-    // Then we start the services.
-    this.startService(async () => {
-      await this.updateRepository();
-    });
-
-    await this.setupDbEvents();
   }
 
   public async add(key: string, value: string): Promise<void> {
     if (!this.keys.has(key)) {
       // If the key does not exist, we add it to the keys set and to the database.
       this.keys.add(key);
-      await this.keyDb.openDb.add(key);
+      await this.keyDb.add(key);
       console.log(`Key ${key} added to the key repository`);
     }
     const valueDb = await this.getValueDb(key, false);
@@ -71,17 +69,28 @@ export class KeyRepository {
     const valueDb = await this.getValueDb(key, true);
 
     // We get all the values from the value database.
-    const values = await valueDb.openDb.all();
-
-    // We convert the values to strings.
-    const stringValues = values.map((value) => {
-      return value.value;
-    });
-    return stringValues;
+    const values = await valueDb.getAll();
+    return values;
   }
 
   public async getAllKeys(): Promise<string[]> {
     return Array.from(this.keys);
+  }
+
+  private async newKeyAdded(key: string): Promise<void> {
+    this.keys.add(key);
+    // If we are a collaborator, replicate the key by keeping the valueDb open.
+    if (this.isCollaborator) {
+      // TODO: Find a better protocol to name the valueDb, current protocol:
+      // "<keyDbName>::<ValueDbName>"
+      const valueDbName = `${this.dbName}::${key}`;
+      const valueDb = new Database(valueDbName, this.orbitdb, this.events);
+      // Init new becuase we do not need to sync the database now.
+      // TODO: See if we need to sync it.
+      await valueDb.initNew();
+      this.keyDbs.set(key, valueDb);
+      console.log(`Key ${key} replicated`);
+    }
   }
 
   private async getValueDb(key: string, existing: boolean): Promise<Database> {
@@ -91,15 +100,15 @@ export class KeyRepository {
       valueDb = this.keyDbs.get(key);
     } else {
       // If we are not replicating the key, we open the value database.
-      valueDb = new Database(this.orbitdb);
       // TODO: Find a better protocol to name the valueDb, current protocol:
       // "<keyDbName>::<ValueDbName>"
       const valueDbName = `${this.dbName}::${key}`;
+      valueDb = new Database(valueDbName, this.orbitdb, this.events);
       if (existing) {
         // If the database already exists, we open it and sync it.
-        await valueDb.openDatabase(valueDbName);
+        await valueDb.initExisting();
       } else {
-        await valueDb.createDatabase(valueDbName);
+        await valueDb.initNew();
       }
 
       // TODO: The new database needs to stay accessible for the collaborators to replicate it.
@@ -110,60 +119,5 @@ export class KeyRepository {
       this.keyDbs.set(key, valueDb);
     }
     return valueDb;
-  }
-
-  private async setupDbEvents() {
-    this.keyDb.openDb.events.on("update", async (entry) => {
-      await this.newKeyAdded(entry.payload.value);
-    });
-
-    this.keyDb.openDb.events.on("join", async (peerId, heads) => {
-      console.log(`${peerId} joined the key database`);
-    });
-  }
-
-  private async updateRepository(): Promise<void> {
-    // Because of orbitdb eventual consistency nature, we need to check if new keys were added
-    // when we sync with other peers. This is because not all the entry sync updates trigger the
-    // "update" event. Only the latest entry is triggered.
-    for await (const record of this.keyDb.openDb.iterator()) {
-      let keyName = record.value;
-      // If we already have the key, skip it
-      if (this.keys.has(keyName)) {
-        continue;
-      }
-      await this.newKeyAdded(keyName);
-    }
-  }
-
-  private async newKeyAdded(keyName: string): Promise<void> {
-    console.log(`New key added: ${keyName}`);
-    this.keys.add(keyName);
-    // If we are a collaborator, replicate the key by keeping the valueDb open.
-    if (this.isCollaborator) {
-      const valueDb = new Database(this.orbitdb);
-      // Init new becuase we do not need to sync the database now.
-      // TODO: See if we need to sync it.
-
-      // TODO: Find a better protocol to name the valueDb, current protocol:
-      // "<keyDbName>::<ValueDbName>"
-      const valueDbName = `${this.dbName}::${keyName}`;
-      await valueDb.createDatabase(valueDbName);
-      this.keyDbs.set(keyName, valueDb);
-      console.log(`Key ${keyName} replicated`);
-    }
-  }
-
-  private async startService(serviceFunction: () => Promise<void>) {
-    // TODO: Find a better way to handle the service function. it should be stoppable.
-    while (true) {
-      try {
-        await serviceFunction();
-      } catch (error) {
-        console.error("Error in service function:", error);
-      }
-      // Wait 10 seconds before running the service function again
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-    }
   }
 }

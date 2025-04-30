@@ -5,6 +5,7 @@ import {
   IPFSBlockStorage,
   LRUStorage,
 } from "@orbitdb/core";
+import EventEmitter from "events";
 
 export class SyncTimeoutError extends Error {
   constructor(message: string) {
@@ -14,14 +15,53 @@ export class SyncTimeoutError extends Error {
 }
 
 export class Database {
+  dbName: string;
   orbitdb: OrbitDB;
   openDb: any;
+  entriesSeen: Set<string>;
+  events: EventEmitter;
+  onUpdate?: (value: string) => Promise<void>;
 
-  constructor(orbitdb: OrbitDB) {
+  constructor(
+    dbName: string,
+    orbitdb: OrbitDB,
+    events: EventEmitter,
+    onUpdate?: (value: string) => Promise<void>
+  ) {
+    this.dbName = dbName;
     this.orbitdb = orbitdb;
+    this.entriesSeen = new Set<string>();
+    this.events = events;
+    this.onUpdate = onUpdate;
   }
 
-  public async createDatabase(dbName: string) {
+  public async initNew(): Promise<void> {
+    await this.createDatabase();
+    await this.setupDbEvents();
+    await this.updateDatabase();
+  }
+
+  public async initExisting(): Promise<boolean> {
+    await this.createDatabase();
+    const synced = await this.syncDb();
+    await this.setupDbEvents();
+    await this.updateDatabase();
+    return synced;
+  }
+
+  public async add(value: string): Promise<void> {
+    // We add the value to the database.
+    const hash = await this.openDb.add(value);
+    await this.newEntryAdded(hash, value);
+  }
+
+  public async getAll(): Promise<string[]> {
+    // We get all the values from the database.
+    const values = await this.openDb.all();
+    return values.map((entry: any) => entry.value);
+  }
+
+  private async createDatabase() {
     // We use the default storage, found in:
     // https://github.com/orbitdb/orbitdb/blob/d290032ebf1692feee1985853b2c54d376bbfc82/src/access-controllers/ipfs.js#L56
     const storage = await ComposedStorage(
@@ -30,18 +70,13 @@ export class Database {
     );
 
     // We use the IPFSAccessController to allow all peers to write to the database.
-    const db = await this.orbitdb.open(dbName, {
+    const db = await this.orbitdb.open(this.dbName, {
       AccessController: IPFSAccessController({
         write: ["*"],
         storage,
       }),
     });
     this.openDb = db;
-  }
-
-  public async openDatabase(dbName: string) {
-    await this.createDatabase(dbName);
-    await this.syncDb();
   }
 
   private async syncDb(): Promise<boolean> {
@@ -105,5 +140,42 @@ export class Database {
         }
       }, pollInterval);
     });
+  }
+
+  private async setupDbEvents() {
+    this.openDb.events.on("update", async (entry) => {
+      // We update the database when a new entry is added.
+      await this.updateDatabase();
+    });
+
+    this.openDb.events.on("join", async (peerId, heads) => {
+      console.log(`${peerId} joined the database ${this.dbName}`);
+    });
+  }
+
+  private async updateDatabase(): Promise<void> {
+    // Because of orbitdb eventual consistency nature, we need to check if new keys were added
+    // when we sync with other peers. This is because not all the entry sync updates trigger the
+    // "update" event. Only the latest entry is triggered.
+    for await (const record of this.openDb.iterator()) {
+      const hash = record.hash;
+      // If we already have the entry, skip it
+      if (this.entriesSeen.has(hash)) {
+        continue;
+      }
+      await this.newEntryAdded(hash, record.value);
+    }
+  }
+
+  private async newEntryAdded(hash: string, value: string): Promise<void> {
+    this.entriesSeen.add(hash);
+    // We call the onUpdate callback function with the new value.
+    if (this.onUpdate) {
+      await this.onUpdate(value);
+    }
+
+    // We emit the new entry added event.
+    this.events.emit(`${this.dbName}`, value);
+    console.log(`New entry added to the database ${this.dbName}`);
   }
 }
