@@ -14,7 +14,8 @@ export const startOrbitDb = async (
   publicIP: string,
   TcpPort: number,
   WSPort: number,
-  WSSPort: number
+  WSSPort: number,
+  dataDir: string
 ) => {
   const isBrowser = typeof window !== "undefined";
   if (isBrowser) {
@@ -48,7 +49,7 @@ export const startOrbitDb = async (
   });
   console.log(`Node started with id: ${helia.libp2p.peerId.toString()}`);
 
-  const orbitdb = await createOrbitDB({ ipfs: helia });
+  const orbitdb = await createOrbitDB({ ipfs: helia, directory: dataDir });
 
   console.log("Peer multiaddrs:");
   let multiaddrs = orbitdb.ipfs.libp2p.getMultiaddrs();

@@ -72,6 +72,12 @@ export interface AstraDbInit {
    * @default 40003
    */
   WSSPort?: number;
+
+  /**
+   * OrbitDB data directory. This is the directory where OrbitDB stores its data.
+   * @default "./data/{dbName}/orbitdb"
+   */
+  orbitDbDataDir?: string;
 }
 
 /**
@@ -101,6 +107,8 @@ export async function createAstraDb(
   initOptions.TcpPort = initOptions.TcpPort ?? 40001;
   initOptions.WSPort = initOptions.WSPort ?? 40002;
   initOptions.WSSPort = initOptions.WSSPort ?? 40003;
+  initOptions.orbitDbDataDir =
+    initOptions.orbitDbDataDir ?? `./data/${initOptions.dbName}/orbitdb`;
 
   const node = new AstraDbNode(initOptions.dbName);
   await node.init(initOptions);

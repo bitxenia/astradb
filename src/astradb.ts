@@ -19,7 +19,8 @@ export class AstraDbNode implements AstraDb {
       initOptions.publicIp,
       initOptions.TcpPort,
       initOptions.WSPort,
-      initOptions.WSSPort
+      initOptions.WSSPort,
+      initOptions.orbitDbDataDir
     );
     this.connectionManager = new ConnectionManager(this.dbName, orbitdb.ipfs);
     await this.connectionManager.init(initOptions.isCollaborator);
