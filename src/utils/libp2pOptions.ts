@@ -23,14 +23,19 @@ import { webTransport } from "@libp2p/webtransport";
 import { keychain } from "@libp2p/keychain";
 import { autoTLS } from "@ipshipyard/libp2p-auto-tls";
 
-export function CreateLibp2pOptions(publicIP: string) {
+export function CreateLibp2pOptions(
+  publicIP: string,
+  TcpPort: number,
+  WSPort: number,
+  WSSPort: number
+) {
   let appendAnnounce: string[] = [];
   // If a public ip was provided, use append announce
   if (publicIP != "0.0.0.0") {
     appendAnnounce = [
-      `/ip4/${publicIP}/tcp/40001/`,
-      `/ip4/${publicIP}/tcp/40002/ws`,
-      `/ip4/${publicIP}/tcp/40003/tls/ws`,
+      `/ip4/${publicIP}/tcp/${TcpPort}`,
+      `/ip4/${publicIP}/tcp/${WSPort}/ws`,
+      `/ip4/${publicIP}/tcp/${WSSPort}/tls/ws`,
     ];
   }
 
@@ -39,9 +44,9 @@ export function CreateLibp2pOptions(publicIP: string) {
     // Websocket ports need to differ from the tcp ports
     addresses: {
       listen: [
-        "/ip4/0.0.0.0/tcp/40001",
-        "/ip4/0.0.0.0/tcp/40002/ws",
-        "/ip4/0.0.0.0/tcp/40003/ws",
+        `/ip4/0.0.0.0/tcp/${TcpPort}`,
+        `/ip4/0.0.0.0/tcp/${WSPort}/ws`,
+        `/ip4/0.0.0.0/tcp/${WSSPort}/ws`,
         // "/p2p-circuit",
         // "/webrtc",
       ],

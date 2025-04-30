@@ -11,7 +11,10 @@ import type { Datastore } from "interface-datastore";
 export const startOrbitDb = async (
   datastore: Datastore,
   blockstore: Blockstore,
-  publicIP: string
+  publicIP: string,
+  TcpPort: number,
+  WSPort: number,
+  WSSPort: number
 ) => {
   const isBrowser = typeof window !== "undefined";
   if (isBrowser) {
@@ -25,7 +28,7 @@ export const startOrbitDb = async (
   if (isBrowser) {
     libp2pOptions = CreateLibp2pOptionsBrowser();
   } else {
-    libp2pOptions = CreateLibp2pOptions(publicIP);
+    libp2pOptions = CreateLibp2pOptions(publicIP, TcpPort, WSPort, WSSPort);
   }
 
   const libp2p = await createLibp2p({

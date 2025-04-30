@@ -51,31 +51,59 @@ export interface AstraDbInit {
   blockstore?: Blockstore;
 
   /**
-   * The public ip of the node
+   * The public ip of the node. If the node is running in a browser, this will be ignored.
    */
-  publicIP?: string;
+  publicIp?: string;
+
+  /**
+   * The tcp port of the node. If astradb is running in a browser, this will be ignored.
+   * @default 40001
+   */
+  TcpPort?: number;
+
+  /**
+   * The websocket port of the node. If astradb is running in a browser, this will be ignored.
+   * @default 40002
+   */
+  WSPort?: number;
+
+  /**
+   * The websocket secure port of the node. If astradb is running in a browser, this will be ignored.
+   * @default 40003
+   */
+  WSSPort?: number;
 }
 
 /**
  * Creates an instance of AstraDb.
  *
  * @function createAstraDb
- * @param {AstraDbInit} init Options used to create an AstraDb
+ * @param {AstraDbInit} initOptions Options used to create an AstraDb
  * @instance
  */
 export async function createAstraDb(
-  init: AstraDbInit = {}
+  initOptions: AstraDbInit = {}
 ): Promise<AstraDbNode> {
-  if (!init.dbName) {
+  if (!initOptions.dbName) {
     throw new Error("dbName is required");
   }
-  const isCollaborator = init.isCollaborator ?? false;
-  const datastore = init.datastore ?? new MemoryDatastore();
-  const blockstore = init.blockstore ?? new MemoryBlockstore();
-  const publicIP = init.publicIP ?? "0.0.0.0";
+  if (initOptions.isCollaborator) {
+    if (!initOptions.datastore || !initOptions.blockstore) {
+      throw new Error(
+        "A collaborator node must use a persistent datastore and blockstore."
+      );
+    }
+  }
+  initOptions.isCollaborator = initOptions.isCollaborator ?? false;
+  initOptions.datastore = initOptions.datastore ?? new MemoryDatastore();
+  initOptions.blockstore = initOptions.blockstore ?? new MemoryBlockstore();
+  initOptions.publicIp = initOptions.publicIp ?? "0.0.0.0";
+  initOptions.TcpPort = initOptions.TcpPort ?? 40001;
+  initOptions.WSPort = initOptions.WSPort ?? 40002;
+  initOptions.WSSPort = initOptions.WSSPort ?? 40003;
 
-  const node = new AstraDbNode(init.dbName);
-  await node.init(isCollaborator, datastore, blockstore, publicIP);
+  const node = new AstraDbNode(initOptions.dbName);
+  await node.init(initOptions);
   return node;
 }
 

@@ -1,9 +1,7 @@
 import { ConnectionManager } from "./connectionManager.js";
-import { AstraDb } from "./index.js";
+import { AstraDb, AstraDbInit } from "./index.js";
 import { startOrbitDb } from "./utils/startOrbitdb.js";
 import { KeyRepository } from "./keyRepository.js";
-import type { Blockstore } from "interface-blockstore";
-import type { Datastore } from "interface-datastore";
 
 export class AstraDbNode implements AstraDb {
   dbName: string;
@@ -14,27 +12,22 @@ export class AstraDbNode implements AstraDb {
     this.dbName = dbName;
   }
 
-  public async init(
-    isCollaborator: boolean,
-    datastore: Datastore,
-    blockstore: Blockstore,
-    publicIp: string
-  ): Promise<void> {
-    if (isCollaborator) {
-      if (!datastore || !blockstore) {
-        throw new Error(
-          "A collaborator node must use a persistent datastore and blockstore."
-        );
-      }
-    }
-    const orbitdb = await startOrbitDb(datastore, blockstore, publicIp);
+  public async init(initOptions: AstraDbInit): Promise<void> {
+    const orbitdb = await startOrbitDb(
+      initOptions.datastore,
+      initOptions.blockstore,
+      initOptions.publicIp,
+      initOptions.TcpPort,
+      initOptions.WSPort,
+      initOptions.WSSPort
+    );
     this.connectionManager = new ConnectionManager(this.dbName, orbitdb.ipfs);
-    await this.connectionManager.init(isCollaborator);
+    await this.connectionManager.init(initOptions.isCollaborator);
 
     this.keyRepository = new KeyRepository(
       this.dbName,
       orbitdb,
-      isCollaborator
+      initOptions.isCollaborator
     );
     await this.keyRepository.init();
   }
