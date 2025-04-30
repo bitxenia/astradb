@@ -1,6 +1,6 @@
 {
   "name": "@bitxenia/astradb",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Database for astrawiki & astrachat ipfs using orbitdb & libp2p",
   "author": "Bitxenia",
   "license": "MIT",
@@ -42,6 +42,7 @@
     "@orbitdb/core": "2.5.0",
     "blockstore-core": "5.0.2",
     "datastore-core": "10.0.2",
+    "events": "^3.3.0",
     "helia": "5.3.0",
     "libp2p": "2.8.2"
   },
