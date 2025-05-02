@@ -28,8 +28,10 @@ export interface AstraDbInit {
   isCollaborator?: boolean;
 
   /**
-   * The login key used to connect to the user in AstraDb.
-   * This is the key used to authenticate the user.
+   * The login key in base16 format.
+   *
+   * This is the key used to connect and authenticate the user.
+   *
    * If no key is provided, the node will create a new key that can be retrieved using the `getUserLoginKey` method.
    */
   loginKey?: string;
@@ -153,6 +155,8 @@ export interface AstraDb {
    * This key is used to authenticate the user, so it is important to keep it secret.
    *
    * It can be used when creating a new AstraDb instance to connect to the same user.
+   *
+   * It is returned as a base16 encoded string.
    */
   getUserLoginKey: () => Promise<string>;
 
