@@ -28,7 +28,7 @@ export interface AstraDbInit {
   isCollaborator?: boolean;
 
   /**
-   * The login key in base16 format.
+   * The login key in base32 format.
    *
    * This is the key used to connect and authenticate the user.
    *
@@ -150,15 +150,24 @@ export interface AstraDb {
   getAllKeys: () => Promise<string[]>;
 
   /**
-   * Retrieves the login key used to connect to the user in AstraDb.
+   * Retrieves the public login key used to connect to the user in AstraDb.
+   *
+   * This key idenifies the user.
+   *
+   * It is returned as a base32 encoded string.
+   */
+  getLoginPublicKey: () => string;
+
+  /**
+   * Retrieves the private login key used to connect to the user in AstraDb.
    *
    * This key is used to authenticate the user, so it is important to keep it secret.
    *
    * It can be used when creating a new AstraDb instance to connect to the same user.
    *
-   * It is returned as a base16 encoded string.
+   * It is returned as a base32 encoded string.
    */
-  getUserLoginKey: () => Promise<string>;
+  getLoginPrivateKey: () => Promise<string>;
 
   /**
    * Events emitted by the AstraDb.
