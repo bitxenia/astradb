@@ -1,6 +1,10 @@
 import { ConnectionManager } from "./connectionManager.js";
 import { AstraDb, AstraDbInit } from "./index.js";
-import { startOrbitDb, getPrivateKey } from "./utils/startOrbitdb.js";
+import {
+  startOrbitDb,
+  getPrivateKey,
+  getPublicKey,
+} from "./utils/startOrbitdb.js";
 import { KeyRepository } from "./keyRepository.js";
 import EventEmitter from "events";
 import { OrbitDB } from "@orbitdb/core";
@@ -58,8 +62,13 @@ export class AstraDbNode implements AstraDb {
     return await this.keyRepository.getAllKeys();
   }
 
-  public async getUserLoginKey(): Promise<string> {
-    // Get the user login key from the key repository.
-    return await getPrivateKey(this.keyRepository.orbitdb);
+  public getLoginPublicKey(): string {
+    // Get the user login public key from orbitdb.
+    return getPublicKey(this.orbitdb);
+  }
+
+  public async getLoginPrivateKey(): Promise<string> {
+    // Get the user login private key from orbitdb.
+    return await getPrivateKey(this.orbitdb);
   }
 }

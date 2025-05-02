@@ -105,8 +105,12 @@ export async function getPrivateKey(orbitdb: OrbitDB): Promise<string> {
   const keystore = orbitdb.keystore;
   const keyObj = await keystore.getKey(USER_ID);
   const rawPrivateKey = keyObj.raw;
-  const hexPrivateKey = uint8ArrayToString(rawPrivateKey, "base16");
+  const hexPrivateKey = uint8ArrayToString(rawPrivateKey, "base32");
   return hexPrivateKey;
+}
+
+export function getPublicKey(orbitdb: OrbitDB): string {
+  return orbitdb.identity.publicKey;
 }
 
 async function CreateIdentities(
@@ -121,7 +125,7 @@ async function CreateIdentities(
     await keystore.createKey(USER_ID);
   } else {
     console.log("Login key provided, using existing identity");
-    const restoredRaw = uint8ArrayFromString(loginKey, "base16");
+    const restoredRaw = uint8ArrayFromString(loginKey, "base32");
     const privateKey = privateKeyFromRaw(restoredRaw);
     await keystore.addKey(USER_ID, { privateKey: privateKey.raw });
   }
