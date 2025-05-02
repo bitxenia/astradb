@@ -1,5 +1,5 @@
 import { createHelia } from "helia";
-import { createOrbitDB } from "@orbitdb/core";
+import { createOrbitDB, KeyStore, Identities } from "@orbitdb/core";
 import { CreateLibp2pOptions } from "./libp2pOptions.js";
 import { CreateLibp2pOptionsBrowser } from "./libp2pOptionsBrowser.js";
 import { createLibp2p } from "libp2p";
@@ -7,8 +7,16 @@ import { loadOrCreateSelfKey } from "@libp2p/config";
 import { type OrbitDB } from "@orbitdb/core";
 import type { Blockstore } from "interface-blockstore";
 import type { Datastore } from "interface-datastore";
+import {
+  fromString as uint8ArrayFromString,
+  toString as uint8ArrayToString,
+} from "uint8arrays";
+import { privateKeyFromRaw } from "@libp2p/crypto/keys";
+
+const USER_ID = "user-id";
 
 export const startOrbitDb = async (
+  loginKey: string,
   datastore: Datastore,
   blockstore: Blockstore,
   publicIP: string,
@@ -49,7 +57,14 @@ export const startOrbitDb = async (
   });
   console.log(`Node started with id: ${helia.libp2p.peerId.toString()}`);
 
-  const orbitdb = await createOrbitDB({ ipfs: helia, directory: dataDir });
+  const identities = await CreateIdentities(loginKey, helia, dataDir);
+
+  const orbitdb = await createOrbitDB({
+    ipfs: helia,
+    directory: dataDir,
+    identities: identities,
+    id: USER_ID,
+  });
 
   console.log("Peer multiaddrs:");
   let multiaddrs = orbitdb.ipfs.libp2p.getMultiaddrs();
@@ -70,6 +85,8 @@ export const startOrbitDb = async (
     }
   });
 
+  console.log(orbitdb.identity);
+
   return orbitdb;
 };
 
@@ -83,3 +100,32 @@ export const stopOrbitDB = async (orbitdb: OrbitDB) => {
   await orbitdb.ipfs.stop();
   await orbitdb.ipfs.blockstore.unwrap().unwrap().child.db.close();
 };
+
+export async function getPrivateKey(orbitdb: OrbitDB): Promise<string> {
+  const keystore = orbitdb.keystore;
+  const keyObj = await keystore.getKey(USER_ID);
+  const rawPrivateKey = keyObj.raw;
+  const hexPrivateKey = uint8ArrayToString(rawPrivateKey, "base16");
+  return hexPrivateKey;
+}
+
+async function CreateIdentities(
+  loginKey: string,
+  ipfs: any,
+  dataDir: string
+): Promise<any> {
+  const keystore = await KeyStore({ path: `${dataDir}/keystore` });
+
+  if (!loginKey) {
+    console.log("No login key provided, creating new identity");
+    await keystore.createKey(USER_ID);
+  } else {
+    console.log("Login key provided, using existing identity");
+    const restoredRaw = uint8ArrayFromString(loginKey, "base16");
+    const privateKey = privateKeyFromRaw(restoredRaw);
+    await keystore.addKey(USER_ID, { privateKey: privateKey.raw });
+  }
+
+  // Add logic to create and return an identity here
+  return await Identities({ ipfs, keystore });
+}
