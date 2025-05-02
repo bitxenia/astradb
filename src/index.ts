@@ -28,6 +28,13 @@ export interface AstraDbInit {
   isCollaborator?: boolean;
 
   /**
+   * The login key used to connect to the user in AstraDb.
+   * This is the key used to authenticate the user.
+   * If no key is provided, the node will create a new key that can be retrieved using the `getUserLoginKey` method.
+   */
+  loginKey?: string;
+
+  /**
    * The datastore used by the node.
    * By default the node will use a MemoryDatastore, which is a memory-based datastore.
    * If you want to use a persistent datastore, you can pass a different datastore.
@@ -102,6 +109,7 @@ export async function createAstraDb(
     }
   }
   initOptions.isCollaborator = initOptions.isCollaborator ?? false;
+  initOptions.loginKey = initOptions.loginKey ?? "";
   initOptions.datastore = initOptions.datastore ?? new MemoryDatastore();
   initOptions.blockstore = initOptions.blockstore ?? new MemoryBlockstore();
   initOptions.publicIp = initOptions.publicIp ?? "0.0.0.0";
@@ -138,6 +146,15 @@ export interface AstraDb {
    * Retrieves all keys in the AstraDb.
    */
   getAllKeys: () => Promise<string[]>;
+
+  /**
+   * Retrieves the login key used to connect to the user in AstraDb.
+   *
+   * This key is used to authenticate the user, so it is important to keep it secret.
+   *
+   * It can be used when creating a new AstraDb instance to connect to the same user.
+   */
+  getUserLoginKey: () => Promise<string>;
 
   /**
    * Events emitted by the AstraDb.

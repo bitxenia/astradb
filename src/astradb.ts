@@ -1,11 +1,13 @@
 import { ConnectionManager } from "./connectionManager.js";
 import { AstraDb, AstraDbInit } from "./index.js";
-import { startOrbitDb } from "./utils/startOrbitdb.js";
+import { startOrbitDb, getPrivateKey } from "./utils/startOrbitdb.js";
 import { KeyRepository } from "./keyRepository.js";
 import EventEmitter from "events";
+import { OrbitDB } from "@orbitdb/core";
 
 export class AstraDbNode implements AstraDb {
   dbName: string;
+  private orbitdb: OrbitDB;
   private connectionManager: ConnectionManager;
   private keyRepository: KeyRepository;
   events: EventEmitter;
@@ -16,7 +18,8 @@ export class AstraDbNode implements AstraDb {
   }
 
   public async init(initOptions: AstraDbInit): Promise<void> {
-    const orbitdb = await startOrbitDb(
+    this.orbitdb = await startOrbitDb(
+      initOptions.loginKey,
       initOptions.datastore,
       initOptions.blockstore,
       initOptions.publicIp,
@@ -25,12 +28,15 @@ export class AstraDbNode implements AstraDb {
       initOptions.WSSPort,
       initOptions.orbitDbDataDir
     );
-    this.connectionManager = new ConnectionManager(this.dbName, orbitdb.ipfs);
+    this.connectionManager = new ConnectionManager(
+      this.dbName,
+      this.orbitdb.ipfs
+    );
     await this.connectionManager.init(initOptions.isCollaborator);
 
     this.keyRepository = new KeyRepository(
       this.dbName,
-      orbitdb,
+      this.orbitdb,
       initOptions.isCollaborator,
       this.events
     );
@@ -50,5 +56,10 @@ export class AstraDbNode implements AstraDb {
   public async getAllKeys(): Promise<string[]> {
     // Get all keys from the key repository.
     return await this.keyRepository.getAllKeys();
+  }
+
+  public async getUserLoginKey(): Promise<string> {
+    // Get the user login key from the key repository.
+    return await getPrivateKey(this.keyRepository.orbitdb);
   }
 }
