@@ -32,7 +32,7 @@ export interface AstraDbInit {
    *
    * This is the key used to connect and authenticate the user.
    *
-   * If no key is provided, the node will create a new key that can be retrieved using the `getUserLoginKey` method.
+   * If no key is provided, the node will create a new key that can be retrieved using the `getLoginPrivateKey` method.
    */
   loginKey?: string;
 
