@@ -22,6 +22,8 @@ export class AstraDbNode implements AstraDb {
   }
 
   public async init(initOptions: AstraDbInit): Promise<void> {
+    const dataDir = `${initOptions.dataDir}/astradb`;
+
     this.orbitdb = await startOrbitDb(
       initOptions.loginKey,
       initOptions.datastore,
@@ -30,7 +32,7 @@ export class AstraDbNode implements AstraDb {
       initOptions.TcpPort,
       initOptions.WSPort,
       initOptions.WSSPort,
-      initOptions.orbitDbDataDir
+      dataDir
     );
     this.connectionManager = new ConnectionManager(
       this.dbName,
