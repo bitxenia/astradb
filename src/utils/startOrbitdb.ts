@@ -85,8 +85,6 @@ export const startOrbitDb = async (
     }
   });
 
-  console.log(orbitdb.identity);
-
   return orbitdb;
 };
 
