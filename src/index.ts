@@ -32,7 +32,7 @@ export interface AstraDbInit {
    *
    * This is the key used to connect and authenticate the user.
    *
-   * If no key is provided, the node will create a new key that can be retrieved using the `getUserLoginKey` method.
+   * If no key is provided, the node will create a new key that can be retrieved using the `getLoginPrivateKey` method.
    */
   loginKey?: string;
 
@@ -84,10 +84,25 @@ export interface AstraDbInit {
   WSSPort?: number;
 
   /**
-   * OrbitDB data directory. This is the directory where OrbitDB stores its data.
-   * @default "./data/{dbName}/orbitdb"
+   * Data directory. This is the directory where all the astradb data will be stored,
+   * it is recommended to use the same directory as the datastore and blockstore.
+   *
+   * Different nodes should use different directories.
+   *
+   * @default "./data"
+   *
+   * @example
+   * ```typescript
+   * const datastore = new FsDatastore("./data/node1/datastore");
+   * const blockstore = new FsBlockstore("./data/node1/blockstore");
+   * const astraDb = await createAstraDb({
+   *  dbName: "mydb",
+   *  datastore: datastore,
+   *  blockstore: blockstore,
+   *  dataDir: "./data/node1",
+   * });
    */
-  orbitDbDataDir?: string;
+  dataDir?: string;
 }
 
 /**
@@ -118,8 +133,7 @@ export async function createAstraDb(
   initOptions.TcpPort = initOptions.TcpPort ?? 40001;
   initOptions.WSPort = initOptions.WSPort ?? 40002;
   initOptions.WSSPort = initOptions.WSSPort ?? 40003;
-  initOptions.orbitDbDataDir =
-    initOptions.orbitDbDataDir ?? `./data/${initOptions.dbName}/orbitdb`;
+  initOptions.dataDir = initOptions.dataDir ?? `./data`;
 
   const node = new AstraDbNode(initOptions.dbName);
   await node.init(initOptions);
