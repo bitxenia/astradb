@@ -100,11 +100,13 @@ export function CreateLibp2pOptions(
       }),
       autoNAT: autoNAT(),
       dcutr: dcutr(),
-      delegatedRouting: () =>
-        createDelegatedRoutingV1HttpApiClient(
-          "https://delegated-ipfs.dev",
-          delegatedHTTPRoutingDefaults()
-        ),
+      // TODO: We think delegated routing could be the cause that sometimes we can not provide to the DHT.
+      //       We disable it for now.
+      // delegatedRouting: () =>
+      //   createDelegatedRoutingV1HttpApiClient(
+      //     "https://delegated-ipfs.dev",
+      //     delegatedHTTPRoutingDefaults()
+      //   ),
       dht: kadDHT({
         // https://github.com/libp2p/js-libp2p/tree/main/packages/kad-dht#example---connecting-to-the-ipfs-amino-dht
         protocol: "/ipfs/kad/1.0.0",

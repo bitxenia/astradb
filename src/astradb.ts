@@ -34,10 +34,13 @@ export class AstraDbNode implements AstraDb {
       initOptions.WSSPort,
       dataDir
     );
-    this.connectionManager = new ConnectionManager(
-      this.dbName,
-      this.orbitdb.ipfs
-    );
+    // Initialize the connection manager if we are not in offline mode.
+    if (!initOptions.offlineMode) {
+      this.connectionManager = new ConnectionManager(
+        this.dbName,
+        this.orbitdb.ipfs
+      );
+    }
     await this.connectionManager.init(initOptions.isCollaborator);
 
     this.keyRepository = new KeyRepository(
@@ -46,7 +49,7 @@ export class AstraDbNode implements AstraDb {
       initOptions.isCollaborator,
       this.events
     );
-    await this.keyRepository.init();
+    await this.keyRepository.init(initOptions.offlineMode);
   }
 
   public async add(key: string, value: string): Promise<void> {

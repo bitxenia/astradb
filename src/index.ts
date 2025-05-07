@@ -103,6 +103,15 @@ export interface AstraDbInit {
    * });
    */
   dataDir?: string;
+
+  /**
+   * If true, the node will not connect to the network and will not provide the database.
+   * Also will not wait for a database to sync if it is not a collaborator.
+   * This is useful for testing purposes.
+   *
+   * @default false
+   */
+  offlineMode?: boolean;
 }
 
 /**
@@ -134,6 +143,7 @@ export async function createAstraDb(
   initOptions.WSPort = initOptions.WSPort ?? 40002;
   initOptions.WSSPort = initOptions.WSSPort ?? 40003;
   initOptions.dataDir = initOptions.dataDir ?? `./data`;
+  initOptions.offlineMode = initOptions.offlineMode ?? false;
 
   const node = new AstraDbNode(initOptions.dbName);
   await node.init(initOptions);

@@ -28,7 +28,7 @@ export class KeyRepository {
     this.mutex = new Mutex();
   }
 
-  public async init(): Promise<void> {
+  public async init(offlineMode: boolean): Promise<void> {
     this.keyDb = new Database(
       this.dbName,
       this.orbitdb,
@@ -36,8 +36,8 @@ export class KeyRepository {
       this.newKeyAdded.bind(this)
     );
 
-    if (!this.isCollaborator) {
-      // If we are not a collaborator, we open an existing database which sincronizes with the providers.
+    if (!this.isCollaborator && !offlineMode) {
+      // If we are not a collaborator and we are not in offline mode, we open an existing database which sincronizes with the providers.
       const synced = await this.keyDb.initExisting();
       if (!synced) {
         // If we are not a collaborator and the db did not sync with the providers,
