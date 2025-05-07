@@ -39,8 +39,8 @@ export class ConnectionManager {
     this.setupEvents();
   }
 
-  private async constructProviderCID(wikiName: string): Promise<CID> {
-    // This is the CID used to identify the wiki.
+  private async constructProviderCID(dbName: string): Promise<CID> {
+    // This is the CID used to identify the database.
     // We upload it to ipfs and provide it (if we are a collaborator) so other peers can find us.
 
     // TODO: We are adding this file to prevent getting banned from the network. See if this is needed.
@@ -52,7 +52,7 @@ export class ConnectionManager {
     const encoder = new TextEncoder();
 
     // add the bytes to your node and receive a CID
-    const cid = await this.fs.addBytes(encoder.encode(wikiName));
+    const cid = await this.fs.addBytes(encoder.encode(dbName));
 
     // Check if the CID is already pinned. If not, pin it.
     if (!(await this.ipfs.pins.isPinned(cid))) {
@@ -67,10 +67,8 @@ export class ConnectionManager {
   }
 
   private async provideDB(cid: CID): Promise<void> {
-    // TODO: See if only colaborators should provide the database.
-
     // TODO: Right now we are providing the CID every 60 seconds. See if this is really needed.
-    //       Because Helia will automatically re-provide.
+    //       Because Helia will supposedly automatically re-provide.
     /**
      * Helia will periodically re-provide every previously provided CID.
      * https://github.com/ipfs/helia/blob/bb2ab74e711ae67514397aa982e35031bdf6541f/packages/interface/src/routing.ts#L67
