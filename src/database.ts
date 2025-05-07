@@ -171,7 +171,7 @@ export class Database {
     this.entriesSeen.add(hash);
     // We call the onUpdate callback function with the new value.
     if (this.onUpdate) {
-      await this.onUpdate(value);
+      this.onUpdate(value);
     }
 
     // We emit the new entry added event.
