@@ -40,10 +40,10 @@ export class AstraDbNode implements AstraDb {
         this.dbName,
         this.orbitdb.ipfs
       );
+      await this.connectionManager.init(initOptions.isCollaborator);
     } else {
       console.log("Offline mode enabled");
     }
-    await this.connectionManager.init(initOptions.isCollaborator);
 
     this.keyRepository = new KeyRepository(
       this.dbName,

@@ -105,8 +105,9 @@ export interface AstraDbInit {
   dataDir?: string;
 
   /**
-   * If true, the node will not connect to the network and will not provide the database.
+   * If true, the node will not connect to the astradb network and will not provide the database.
    * Also will not wait for a database to sync if it is not a collaborator.
+   *
    * This is useful for testing purposes.
    *
    * @default false
