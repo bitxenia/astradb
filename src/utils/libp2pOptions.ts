@@ -24,6 +24,7 @@ import { keychain } from "@libp2p/keychain";
 import { autoTLS } from "@ipshipyard/libp2p-auto-tls";
 
 export function CreateLibp2pOptions(
+  dbName: string,
   publicIP: string,
   TcpPort: number,
   WSPort: number,
@@ -74,10 +75,7 @@ export function CreateLibp2pOptions(
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: 1000,
-        topics: [
-          "astradb._peer-discovery._p2p._pubsub",
-          "_peer-discovery._p2p._pubsub",
-        ],
+        topics: [`${dbName}.astradb._peer-discovery._p2p._pubsub`],
         listenOnly: false,
       }),
       bootstrap({
@@ -100,13 +98,11 @@ export function CreateLibp2pOptions(
       }),
       autoNAT: autoNAT(),
       dcutr: dcutr(),
-      // TODO: We think delegated routing could be the cause that sometimes we can not provide to the DHT.
-      //       We disable it for now.
-      // delegatedRouting: () =>
-      //   createDelegatedRoutingV1HttpApiClient(
-      //     "https://delegated-ipfs.dev",
-      //     delegatedHTTPRoutingDefaults()
-      //   ),
+      delegatedRouting: () =>
+        createDelegatedRoutingV1HttpApiClient(
+          "https://delegated-ipfs.dev",
+          delegatedHTTPRoutingDefaults()
+        ),
       dht: kadDHT({
         // https://github.com/libp2p/js-libp2p/tree/main/packages/kad-dht#example---connecting-to-the-ipfs-amino-dht
         protocol: "/ipfs/kad/1.0.0",

@@ -16,6 +16,7 @@ import { privateKeyFromRaw } from "@libp2p/crypto/keys";
 const USER_ID = "user-id";
 
 export const startOrbitDb = async (
+  dbName: string,
   loginKey: string,
   datastore: Datastore,
   blockstore: Blockstore,
@@ -35,9 +36,15 @@ export const startOrbitDb = async (
 
   let libp2pOptions: Object;
   if (isBrowser) {
-    libp2pOptions = CreateLibp2pOptionsBrowser();
+    libp2pOptions = CreateLibp2pOptionsBrowser(dbName);
   } else {
-    libp2pOptions = CreateLibp2pOptions(publicIP, TcpPort, WSPort, WSSPort);
+    libp2pOptions = CreateLibp2pOptions(
+      dbName,
+      publicIP,
+      TcpPort,
+      WSPort,
+      WSSPort
+    );
   }
 
   const libp2p = await createLibp2p({

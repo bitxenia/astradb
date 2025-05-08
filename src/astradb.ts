@@ -25,6 +25,7 @@ export class AstraDbNode implements AstraDb {
     const dataDir = `${initOptions.dataDir}/astradb`;
 
     this.orbitdb = await startOrbitDb(
+      this.dbName,
       initOptions.loginKey,
       initOptions.datastore,
       initOptions.blockstore,

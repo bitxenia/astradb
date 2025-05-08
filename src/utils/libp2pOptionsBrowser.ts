@@ -19,7 +19,7 @@ import { pubsubPeerDiscovery } from "@libp2p/pubsub-peer-discovery";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { webTransport } from "@libp2p/webtransport";
 
-export function CreateLibp2pOptionsBrowser() {
+export function CreateLibp2pOptionsBrowser(dbName: string) {
   return {
     // addresses: {
     //   listen: ["/p2p-circuit", "/webrtc"],
@@ -39,10 +39,7 @@ export function CreateLibp2pOptionsBrowser() {
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: 1000,
-        topics: [
-          "bitxenia._peer-discovery._p2p._pubsub",
-          "_peer-discovery._p2p._pubsub",
-        ],
+        topics: [`${dbName}.astradb._peer-discovery._p2p._pubsub`],
         listenOnly: false,
       }),
       bootstrap({
