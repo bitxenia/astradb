@@ -24,6 +24,7 @@ export const startOrbitDb = async (
   TcpPort: number,
   WSPort: number,
   WSSPort: number,
+  WebRTCDirectPort: number,
   dataDir: string
 ) => {
   const isBrowser = typeof window !== "undefined";
@@ -43,7 +44,8 @@ export const startOrbitDb = async (
       publicIP,
       TcpPort,
       WSPort,
-      WSSPort
+      WSSPort,
+      WebRTCDirectPort
     );
   }
 

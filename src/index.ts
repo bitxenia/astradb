@@ -67,21 +67,39 @@ export interface AstraDbInit {
 
   /**
    * The tcp port of the node. If astradb is running in a browser, this will be ignored.
+   *
+   * It is a TCP port.
+   *
    * @default 40001
    */
-  TcpPort?: number;
+  tcpPort?: number;
 
   /**
    * The websocket port of the node. If astradb is running in a browser, this will be ignored.
+   *
+   * It is a TCP port.
+   *
    * @default 40002
    */
-  WSPort?: number;
+  wsPort?: number;
 
   /**
    * The websocket secure port of the node. If astradb is running in a browser, this will be ignored.
+   *
+   * It is a TCP port.
+   *
    * @default 40003
    */
-  WSSPort?: number;
+  wssPort?: number;
+
+  /**
+   * The WebRTC direct port of the node. If astradb is running in a browser, this will be ignored.
+   *
+   * It is a UDP port.
+   *
+   * @default 40001
+   */
+  webRTCDirectPort?: number;
 
   /**
    * Data directory. This is the directory where all the astradb data will be stored,
@@ -140,9 +158,10 @@ export async function createAstraDb(
   initOptions.datastore = initOptions.datastore ?? new MemoryDatastore();
   initOptions.blockstore = initOptions.blockstore ?? new MemoryBlockstore();
   initOptions.publicIp = initOptions.publicIp ?? "0.0.0.0";
-  initOptions.TcpPort = initOptions.TcpPort ?? 40001;
-  initOptions.WSPort = initOptions.WSPort ?? 40002;
-  initOptions.WSSPort = initOptions.WSSPort ?? 40003;
+  initOptions.tcpPort = initOptions.tcpPort ?? 40001;
+  initOptions.wsPort = initOptions.wsPort ?? 40002;
+  initOptions.wssPort = initOptions.wssPort ?? 40003;
+  initOptions.webRTCDirectPort = initOptions.webRTCDirectPort ?? 40001;
   initOptions.dataDir = initOptions.dataDir ?? `./data`;
   initOptions.offlineMode = initOptions.offlineMode ?? false;
 

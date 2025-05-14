@@ -28,7 +28,8 @@ export function CreateLibp2pOptions(
   publicIP: string,
   TcpPort: number,
   WSPort: number,
-  WSSPort: number
+  WSSPort: number,
+  WebRTCDirectPort: number
 ) {
   let appendAnnounce: string[] = [];
   // If a public ip was provided, use append announce
@@ -37,6 +38,7 @@ export function CreateLibp2pOptions(
       `/ip4/${publicIP}/tcp/${TcpPort}`,
       `/ip4/${publicIP}/tcp/${WSPort}/ws`,
       `/ip4/${publicIP}/tcp/${WSSPort}/tls/ws`,
+      `/ip4/${publicIP}/udp/${WebRTCDirectPort}/webrtc-direct`,
     ];
   }
 
@@ -48,6 +50,7 @@ export function CreateLibp2pOptions(
         `/ip4/0.0.0.0/tcp/${TcpPort}`,
         `/ip4/0.0.0.0/tcp/${WSPort}/ws`,
         `/ip4/0.0.0.0/tcp/${WSSPort}/ws`,
+        `/ip4/0.0.0.0/udp/${WebRTCDirectPort}/webrtc-direct`,
         // "/p2p-circuit",
         // "/webrtc",
       ],

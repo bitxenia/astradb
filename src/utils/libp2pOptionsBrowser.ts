@@ -27,7 +27,7 @@ export function CreateLibp2pOptionsBrowser(dbName: string) {
     transports: [
       // circuitRelayTransport(),
       // webRTC(),
-      // webRTCDirect(),
+      webRTCDirect(),
       // webTransport(),
       webSockets(),
     ],
