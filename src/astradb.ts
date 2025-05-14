@@ -35,7 +35,7 @@ export class AstraDbNode implements AstraDb {
       initOptions.wssPort,
       initOptions.webRTCDirectPort,
       dataDir,
-      initOptions.bootstapPeers
+      initOptions.bootstrapPeers
     );
     // Initialize the connection manager if we are not in offline mode.
     if (!initOptions.offlineMode) {

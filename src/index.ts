@@ -133,7 +133,7 @@ export interface AstraDbInit {
    *
    * @default []
    */
-  bootstapPeers?: string[];
+  bootstrapPeers?: string[];
 
   /**
    * If true, the node will not connect to the astradb network and will not provide the database.
@@ -176,7 +176,7 @@ export async function createAstraDb(
   initOptions.wssPort = initOptions.wssPort ?? 40003;
   initOptions.webRTCDirectPort = initOptions.webRTCDirectPort ?? 40001;
   initOptions.dataDir = initOptions.dataDir ?? `./data`;
-  initOptions.bootstapPeers = initOptions.bootstapPeers ?? [];
+  initOptions.bootstrapPeers = initOptions.bootstrapPeers ?? [];
   initOptions.offlineMode = initOptions.offlineMode ?? false;
 
   const node = new AstraDbNode(initOptions.dbName);
