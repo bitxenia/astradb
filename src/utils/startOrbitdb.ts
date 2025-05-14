@@ -12,6 +12,7 @@ import {
   toString as uint8ArrayToString,
 } from "uint8arrays";
 import { privateKeyFromRaw } from "@libp2p/crypto/keys";
+import { bootstrap } from "@libp2p/bootstrap";
 
 const USER_ID = "user-id";
 
@@ -25,7 +26,8 @@ export const startOrbitDb = async (
   WSPort: number,
   WSSPort: number,
   WebRTCDirectPort: number,
-  dataDir: string
+  dataDir: string,
+  bootstrapPeers: string[]
 ) => {
   const isBrowser = typeof window !== "undefined";
   if (isBrowser) {
@@ -37,7 +39,7 @@ export const startOrbitDb = async (
 
   let libp2pOptions: Object;
   if (isBrowser) {
-    libp2pOptions = CreateLibp2pOptionsBrowser(dbName);
+    libp2pOptions = CreateLibp2pOptionsBrowser(dbName, bootstrapPeers);
   } else {
     libp2pOptions = CreateLibp2pOptions(
       dbName,
@@ -45,7 +47,8 @@ export const startOrbitDb = async (
       TcpPort,
       WSPort,
       WSSPort,
-      WebRTCDirectPort
+      WebRTCDirectPort,
+      bootstrapPeers
     );
   }
 
