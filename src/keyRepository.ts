@@ -93,15 +93,7 @@ export class KeyRepository {
       this.keys.add(key);
       // If we are a collaborator, replicate the key by keeping the valueDb open.
       if (this.isCollaborator) {
-        // TODO: Find a better protocol to name the valueDb, current protocol:
-        // "<keyDbName>::<ValueDbName>"
-        const valueDbName = `${this.dbName}::${key}`;
-        const valueDb = new Database(valueDbName, this.orbitdb, this.events);
-        // Init new becuase we do not need to sync the database now.
-        // TODO: See if we need to sync it.
-        await valueDb.initNew();
-        this.keyDbs.set(key, valueDb);
-        console.log(`Key ${key} replicated`);
+        await this.replicateKey(key, false);
       }
     });
   }
@@ -113,24 +105,42 @@ export class KeyRepository {
       valueDb = this.keyDbs.get(key);
     } else {
       // If we are not replicating the key, we open the value database.
-      // TODO: Find a better protocol to name the valueDb, current protocol:
-      // "<keyDbName>::<ValueDbName>"
-      const valueDbName = `${this.dbName}::${key}`;
-      valueDb = new Database(valueDbName, this.orbitdb, this.events);
-      if (existing) {
-        // If the database already exists, we open it and sync it.
-        await valueDb.initExisting();
-      } else {
-        await valueDb.initNew();
-      }
 
       // TODO: The new database needs to stay accessible for the collaborators to replicate it.
       //       Every change is made without confirmation that it was replicated to the collaborators.
-      //       To mitigate this we replicate permanently the keyDb. Asuming non collaborators are
+      //       To mitigate this we replicate every keyDB we use permanently. Asuming non collaborators are
       //       temporary nodes, and could not stay too long in the network. See if this is the best
       //       approach.
-      this.keyDbs.set(key, valueDb);
+      valueDb = await this.replicateKey(key, existing);
     }
+    return valueDb;
+  }
+
+  private async replicateKey(
+    key: string,
+    existing: boolean
+  ): Promise<Database> {
+    if (this.keyDbs.has(key)) {
+      // If we are replicating the key, we use the existing value database.
+      console.log(
+        `Key ${key} already replicated, using existing value database`
+      );
+      return this.keyDbs.get(key);
+    }
+    let valueDb: Database;
+    // If we are not replicating the key, we open the value database.
+    // TODO: Find a better protocol to name the valueDb, current protocol:
+    // "<keyDbName>::<ValueDbName>"
+    const valueDbName = `${this.dbName}::${key}`;
+    valueDb = new Database(valueDbName, this.orbitdb, this.events);
+    if (existing) {
+      // If the database already exists, we open it and sync it.
+      await valueDb.initExisting();
+    } else {
+      await valueDb.initNew();
+    }
+    this.keyDbs.set(key, valueDb);
+
     return valueDb;
   }
 }
