@@ -99,11 +99,6 @@ export function CreateLibp2pOptions(
       outboundUpgradeTimeout: 1e4,
     },
     peerDiscovery: [
-      pubsubPeerDiscovery({
-        interval: 1000,
-        topics: [`${dbName}.astradb._peer-discovery._p2p._pubsub`],
-        listenOnly: false,
-      }),
       bootstrap({
         list: bootstrapPeersList,
       }),
