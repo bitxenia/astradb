@@ -2,12 +2,7 @@ import { HeliaLibp2p } from "helia";
 import { CID } from "multiformats/cid";
 import { Peer, PeerId } from "@libp2p/interface";
 import { UnixFS, unixfs } from "@helia/unixfs";
-import { type Multiaddr, multiaddr } from "@multiformats/multiaddr";
-
-interface Provider {
-  id: PeerId;
-  multiaddrs: Multiaddr[];
-}
+import { multiaddr } from "@multiformats/multiaddr";
 
 export class ConnectionManager {
   private dbName: string;
@@ -16,14 +11,14 @@ export class ConnectionManager {
   private fs: UnixFS;
   private protocol: string;
   private providerProtocol: string;
-  private connectedProviders: Set<Provider>;
+  private connectedProviders: Set<PeerId>;
 
   constructor(dbName: string, ipfs: HeliaLibp2p) {
     this.dbName = dbName;
     this.ipfs = ipfs;
     this.protocol = `/astradb/${this.dbName}`;
     this.providerProtocol = `/astradb/${this.dbName}/provider`;
-    this.connectedProviders = new Set<Provider>();
+    this.connectedProviders = new Set<PeerId>();
   }
 
   public async init(isCollaborator: boolean, bootstrapProviderPeers: string[]) {
@@ -148,11 +143,7 @@ export class ConnectionManager {
     try {
       let providers = this.ipfs.routing.findProviders(this.providerCID);
       for await (const provider of providers) {
-        const providerInfo: Provider = {
-          id: provider.id,
-          multiaddrs: provider.multiaddrs,
-        };
-        await this.connectToProvider(providerInfo);
+        await this.connectToProvider(provider.id);
       }
     } catch (error) {
       console.error("Error finding providers:", error);
@@ -160,37 +151,35 @@ export class ConnectionManager {
   }
 
   private async reconnectToProviders(): Promise<void> {
-    for (const provider of this.connectedProviders) {
-      await this.connectToProvider(provider);
+    for (const providerId of this.connectedProviders) {
+      await this.connectToProvider(providerId);
     }
   }
 
-  private async connectToProvider(provider: Provider): Promise<void> {
+  private async connectToProvider(providerId: PeerId): Promise<void> {
     try {
       // Check if the provider is us.
-      if (provider.id.equals(this.ipfs.libp2p.peerId)) {
+      if (providerId.equals(this.ipfs.libp2p.peerId)) {
         // console.log("Provider is us, skipping...");
         return;
       }
       // Check if we are already connected.
-      if (this.ipfs.libp2p.getConnections(provider.id).length > 0) {
+      if (this.ipfs.libp2p.getConnections(providerId).length > 0) {
         // console.log(`Already connected to provider: ${provider.id}`);
         return;
       }
 
-      console.log(`Connecting to provider: ${provider.id}`);
-      this.ipfs.libp2p.dial(provider.multiaddrs).then(
+      console.log(`Connecting to provider: ${providerId}`);
+      this.ipfs.libp2p.dial(providerId).then(
         (conn) => {
-          console.log(`Connected to provider ${provider.id}`);
+          console.log(`Connected to provider ${providerId}`);
         },
         (error) => {
-          console.error(
-            `Error connecting to provider ${provider.id}: ${error}`
-          );
+          console.error(`Error connecting to provider ${providerId}: ${error}`);
         }
       );
     } catch (error) {
-      console.error(`Error connecting to provider ${provider.id}: ${error}`);
+      console.error(`Error connecting to provider ${providerId}: ${error}`);
     }
   }
 
@@ -238,10 +227,7 @@ export class ConnectionManager {
     if (peerInfo.protocols.includes(this.providerProtocol)) {
       console.log(`New connection is from a provider peer: ${peerId}`);
       // Add the peer to the connected providers.
-      this.connectedProviders.add({
-        id: peerId,
-        multiaddrs: peerInfo.addresses.map((ma) => ma.multiaddr),
-      });
+      this.connectedProviders.add(peerId);
     }
 
     // Tag the peer with a high priority to make sure we are connected to it.
