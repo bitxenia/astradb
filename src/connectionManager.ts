@@ -15,22 +15,28 @@ export class ConnectionManager {
   private providerCID: CID;
   private fs: UnixFS;
   private protocol: string;
-  private connectedProviders: Set<Provider>;
 
   constructor(dbName: string, ipfs: HeliaLibp2p) {
     this.dbName = dbName;
     this.ipfs = ipfs;
     this.protocol = `/astradb/${this.dbName}`;
-    this.connectedProviders = new Set<Provider>();
   }
 
   public async init(isCollaborator: boolean) {
-    this.providerCID = await this.constructProviderCID(this.dbName);
+    this.providerCID = await this.constructProviderCID(
+      this.dbName,
+      isCollaborator
+    );
 
     // Add astradb protocol to the libp2p node.
     await this.ipfs.libp2p.handle(this.protocol, ({ stream }) => {
       console.log(`Received connection from /astradb/${this.dbName} peer`);
     });
+
+    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
+    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
+    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
+    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
 
     this.startService(async () => {
       await this.searchForProviders();
@@ -44,18 +50,13 @@ export class ConnectionManager {
       });
     }
 
-    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
-    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
-    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
-    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
-    this.startService(async () => {
-      await this.reconnectToProviders();
-    }, 1000);
-
     this.setupEvents();
   }
 
-  private async constructProviderCID(dbName: string): Promise<CID> {
+  private async constructProviderCID(
+    dbName: string,
+    isCollaborator: boolean
+  ): Promise<CID> {
     // This is the CID used to identify the database.
     // We upload it to ipfs and provide it (if we are a collaborator) so other peers can find us.
 
@@ -70,12 +71,18 @@ export class ConnectionManager {
     // add the bytes to your node and receive a CID
     const cid = await this.fs.addBytes(encoder.encode(dbName));
 
-    // Check if the CID is already pinned. If not, pin it.
-    if (!(await this.ipfs.pins.isPinned(cid))) {
-      // Pin the block
-      for await (const pinnedCid of this.ipfs.pins.add(cid)) {
-        console.log(`Pinned CID: ${pinnedCid}`);
+    if (isCollaborator) {
+      // Check if the CID is already pinned. If not, pin it.
+      if (!(await this.ipfs.pins.isPinned(cid))) {
+        // Pin the block
+        for await (const pinnedCid of this.ipfs.pins.add(cid)) {
+          console.log(`Pinned CID: ${pinnedCid}`);
+        }
       }
+    } else {
+      // If we are not a collaborator, we do run the gc to remove the block from the local datastore.
+      // This is because since we are not a collaborator, we don't need to keep the block in our local datastore.
+      await this.ipfs.gc();
     }
 
     console.log(`Provider CID created: ${cid}`);
@@ -123,12 +130,6 @@ export class ConnectionManager {
       }
     } catch (error) {
       console.error("Error finding providers:", error);
-    }
-  }
-
-  private async reconnectToProviders(): Promise<void> {
-    for (const provider of this.connectedProviders) {
-      await this.connectToProvider(provider);
     }
   }
 
@@ -201,17 +202,6 @@ export class ConnectionManager {
       return;
     }
     console.log(`Provider is an /astradb/${this.dbName} peer: ${peerId}`);
-
-    const provider: Provider = {
-      id: peerId,
-      multiaddrs: peerInfo.addresses.map((ma) => ma.toString()),
-    };
-
-    // Add the peer to the connected providers list.
-    if (!this.connectedProviders.has(provider)) {
-      // console.log(`Adding provider ${provider.id} to connected providers`);
-      this.connectedProviders.add(provider);
-    }
 
     // Tag the peer with a high priority to make sure we are connected to it.
     // https://github.com/libp2p/js-libp2p/blob/main/doc/LIMITS.md#closing-connections
