@@ -25,7 +25,6 @@ export class AstraDbNode implements AstraDb {
     const dataDir = `${initOptions.dataDir}/astradb`;
 
     this.orbitdb = await startOrbitDb(
-      this.dbName,
       initOptions.loginKey,
       initOptions.datastore,
       initOptions.blockstore,
@@ -34,8 +33,7 @@ export class AstraDbNode implements AstraDb {
       initOptions.wsPort,
       initOptions.wssPort,
       initOptions.webRTCDirectPort,
-      dataDir,
-      initOptions.bootstrapPeers
+      dataDir
     );
     // Initialize the connection manager if we are not in offline mode.
     if (!initOptions.offlineMode) {
@@ -43,7 +41,10 @@ export class AstraDbNode implements AstraDb {
         this.dbName,
         this.orbitdb.ipfs
       );
-      await this.connectionManager.init(initOptions.isCollaborator);
+      await this.connectionManager.init(
+        initOptions.isCollaborator,
+        initOptions.bootstrapProviderPeers
+      );
     } else {
       console.log("Offline mode enabled");
     }

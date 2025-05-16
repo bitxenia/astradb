@@ -18,24 +18,7 @@ import { pubsubPeerDiscovery } from "@libp2p/pubsub-peer-discovery";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { webTransport } from "@libp2p/webtransport";
 
-export function CreateLibp2pOptionsBrowser(
-  dbName: string,
-  bootstrapPeers: string[]
-) {
-  // We use the default list of bootstrap nodes, found in the helia repo:
-  // https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.js
-  let bootstrapPeersList: string[] = [
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-    // va1 is not in the TXT records for _dnsaddr.bootstrap.libp2p.io yet
-    // so use the host name directly
-    "/dnsaddr/va1.bootstrap.libp2p.io/p2p/12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc8",
-    "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-  ];
-  // Add the bootstrap peers from the config
-  bootstrapPeersList = bootstrapPeersList.concat(bootstrapPeers);
-
+export function CreateLibp2pOptionsBrowser() {
   return {
     // addresses: {
     //   listen: ["/p2p-circuit", "/webrtc"],
@@ -62,7 +45,17 @@ export function CreateLibp2pOptionsBrowser(
     },
     peerDiscovery: [
       bootstrap({
-        list: bootstrapPeersList,
+        list: [
+          // We use the default list of bootstrap nodes, found in the helia repo:
+          // https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.js
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+          // va1 is not in the TXT records for _dnsaddr.bootstrap.libp2p.io yet
+          // so use the host name directly
+          "/dnsaddr/va1.bootstrap.libp2p.io/p2p/12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc8",
+          "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
+        ],
       }),
     ],
     services: {

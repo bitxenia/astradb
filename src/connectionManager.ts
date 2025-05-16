@@ -2,11 +2,11 @@ import { HeliaLibp2p } from "helia";
 import { CID } from "multiformats/cid";
 import { Peer, PeerId } from "@libp2p/interface";
 import { UnixFS, unixfs } from "@helia/unixfs";
-import { multiaddr } from "@multiformats/multiaddr";
+import { type Multiaddr, multiaddr } from "@multiformats/multiaddr";
 
 interface Provider {
   id: PeerId;
-  multiaddrs: string[];
+  multiaddrs: Multiaddr[];
 }
 
 export class ConnectionManager {
@@ -15,14 +15,18 @@ export class ConnectionManager {
   private providerCID: CID;
   private fs: UnixFS;
   private protocol: string;
+  private providerProtocol: string;
+  private connectedProviders: Set<Provider>;
 
   constructor(dbName: string, ipfs: HeliaLibp2p) {
     this.dbName = dbName;
     this.ipfs = ipfs;
     this.protocol = `/astradb/${this.dbName}`;
+    this.providerProtocol = `/astradb/${this.dbName}/provider`;
+    this.connectedProviders = new Set<Provider>();
   }
 
-  public async init(isCollaborator: boolean) {
+  public async init(isCollaborator: boolean, bootstrapProviderPeers: string[]) {
     this.providerCID = await this.constructProviderCID(
       this.dbName,
       isCollaborator
@@ -33,10 +37,15 @@ export class ConnectionManager {
       console.log(`Received connection from /astradb/${this.dbName} peer`);
     });
 
-    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
-    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
-    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
-    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
+    // Add provider protocol to the libp2p node if we are a collaborator.
+    // We use this protocol to identify the provider peers.
+    if (isCollaborator) {
+      await this.ipfs.libp2p.handle(this.providerProtocol, ({ stream }) => {
+        console.log(
+          `Received connection from /astradb/${this.dbName}/provider peer`
+        );
+      });
+    }
 
     this.startService(async () => {
       await this.searchForProviders();
@@ -50,7 +59,30 @@ export class ConnectionManager {
       });
     }
 
+    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
+    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
+    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
+    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
+    this.startService(async () => {
+      await this.reconnectToProviders();
+    }, 5000);
+
     this.setupEvents();
+
+    // We try to connect to the bootstrap provider peers.
+    for (const bootstrapPeer of bootstrapProviderPeers) {
+      const addr = multiaddr(bootstrapPeer);
+      this.ipfs.libp2p.dial(addr).then(
+        (conn) => {
+          console.log(`Connected to bootstrap provider peer ${addr}`);
+        },
+        (error) => {
+          console.error(
+            `Error connecting to bootstrap provider peer ${addr}: ${error}`
+          );
+        }
+      );
+    }
   }
 
   private async constructProviderCID(
@@ -124,12 +156,18 @@ export class ConnectionManager {
       for await (const provider of providers) {
         const providerInfo: Provider = {
           id: provider.id,
-          multiaddrs: provider.multiaddrs.map((ma) => ma.toString()),
+          multiaddrs: provider.multiaddrs,
         };
         await this.connectToProvider(providerInfo);
       }
     } catch (error) {
       console.error("Error finding providers:", error);
+    }
+  }
+
+  private async reconnectToProviders(): Promise<void> {
+    for (const provider of this.connectedProviders) {
+      await this.connectToProvider(provider);
     }
   }
 
@@ -146,13 +184,12 @@ export class ConnectionManager {
         return;
       }
 
-      console.log(`New provider found, connecting: ${provider.id}`);
+      console.log(`Connecting to provider: ${provider.id}`);
 
       const multiaddrs = provider.multiaddrs.map((ma) => multiaddr(ma));
       this.ipfs.libp2p.dial(multiaddrs).then(
         (conn) => {
           console.log(`Connected to provider ${provider.id}`);
-          this.manageNewConnection(provider.id);
         },
         (error) => {
           console.error(
@@ -201,7 +238,19 @@ export class ConnectionManager {
     if (!peerInfo.protocols.includes(this.protocol)) {
       return;
     }
-    console.log(`Provider is an /astradb/${this.dbName} peer: ${peerId}`);
+    console.log(
+      `New connection from a /astradb/${this.dbName} peer: ${peerId}`
+    );
+
+    // See if the peer is a provider peer.
+    if (peerInfo.protocols.includes(this.providerProtocol)) {
+      console.log(`New connection is from a provider peer: ${peerId}`);
+      // Add the peer to the connected providers.
+      this.connectedProviders.add({
+        id: peerId,
+        multiaddrs: peerInfo.addresses.map((ma) => ma.multiaddr),
+      });
+    }
 
     // Tag the peer with a high priority to make sure we are connected to it.
     // https://github.com/libp2p/js-libp2p/blob/main/doc/LIMITS.md#closing-connections

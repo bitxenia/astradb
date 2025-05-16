@@ -17,7 +17,6 @@ import { bootstrap } from "@libp2p/bootstrap";
 const USER_ID = "user-id";
 
 export const startOrbitDb = async (
-  dbName: string,
   loginKey: string,
   datastore: Datastore,
   blockstore: Blockstore,
@@ -26,8 +25,7 @@ export const startOrbitDb = async (
   WSPort: number,
   WSSPort: number,
   WebRTCDirectPort: number,
-  dataDir: string,
-  bootstrapPeers: string[]
+  dataDir: string
 ) => {
   const isBrowser = typeof window !== "undefined";
   if (isBrowser) {
@@ -39,16 +37,14 @@ export const startOrbitDb = async (
 
   let libp2pOptions: Object;
   if (isBrowser) {
-    libp2pOptions = CreateLibp2pOptionsBrowser(dbName, bootstrapPeers);
+    libp2pOptions = CreateLibp2pOptionsBrowser();
   } else {
     libp2pOptions = CreateLibp2pOptions(
-      dbName,
       publicIP,
       TcpPort,
       WSPort,
       WSSPort,
-      WebRTCDirectPort,
-      bootstrapPeers
+      WebRTCDirectPort
     );
   }
 

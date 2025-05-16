@@ -24,13 +24,11 @@ import { keychain } from "@libp2p/keychain";
 import { autoTLS } from "@ipshipyard/libp2p-auto-tls";
 
 export function CreateLibp2pOptions(
-  dbName: string,
   publicIP: string,
   TcpPort: number,
   WSPort: number,
   WSSPort: number,
-  WebRTCDirectPort: number,
-  bootstrapPeers: string[]
+  WebRTCDirectPort: number
 ) {
   let appendAnnounce: string[] = [];
   // If a public ip was provided, use append announce
@@ -42,21 +40,6 @@ export function CreateLibp2pOptions(
       `/ip4/${publicIP}/udp/${WebRTCDirectPort}/webrtc-direct`,
     ];
   }
-
-  // We use the default list of bootstrap nodes, found in the helia repo:
-  // https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.js
-  let bootstrapPeersList: string[] = [
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-    // va1 is not in the TXT records for _dnsaddr.bootstrap.libp2p.io yet
-    // so use the host name directly
-    "/dnsaddr/va1.bootstrap.libp2p.io/p2p/12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc8",
-    "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-  ];
-  // Add the bootstrap peers from the config
-  bootstrapPeersList = bootstrapPeersList.concat(bootstrapPeers);
-
   return {
     // TODO: Ports were manually opened, in my case upnp did not work.
     // Websocket ports need to differ from the tcp ports
@@ -100,7 +83,17 @@ export function CreateLibp2pOptions(
     },
     peerDiscovery: [
       bootstrap({
-        list: bootstrapPeersList,
+        list: [
+          // We use the default list of bootstrap nodes, found in the helia repo:
+          // https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.js
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+          "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+          // va1 is not in the TXT records for _dnsaddr.bootstrap.libp2p.io yet
+          // so use the host name directly
+          "/dnsaddr/va1.bootstrap.libp2p.io/p2p/12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc8",
+          "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
+        ],
       }),
     ],
     services: {

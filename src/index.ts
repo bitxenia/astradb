@@ -123,7 +123,7 @@ export interface AstraDbInit {
   dataDir?: string;
 
   /**
-   * List of bootstrap peers to connect to. This is useful if there are known peers using the same database
+   * List of bootstrap provider peers to connect to. This is useful if there are known peers using the same database
    * and you want to connect to them directly, instead of waiting for the discovery process.
    *
    * The list contains the multiaddresses of the peers.
@@ -133,7 +133,7 @@ export interface AstraDbInit {
    *
    * @default []
    */
-  bootstrapPeers?: string[];
+  bootstrapProviderPeers?: string[];
 
   /**
    * If true, the node will not connect to the astradb network and will not provide the database.
@@ -176,7 +176,7 @@ export async function createAstraDb(
   initOptions.wssPort = initOptions.wssPort ?? 40003;
   initOptions.webRTCDirectPort = initOptions.webRTCDirectPort ?? 40001;
   initOptions.dataDir = initOptions.dataDir ?? `./data`;
-  initOptions.bootstrapPeers = initOptions.bootstrapPeers ?? [];
+  initOptions.bootstrapProviderPeers = initOptions.bootstrapProviderPeers ?? [];
   initOptions.offlineMode = initOptions.offlineMode ?? false;
 
   const node = new AstraDbNode(initOptions.dbName);
