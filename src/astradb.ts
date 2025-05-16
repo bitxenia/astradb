@@ -30,8 +30,6 @@ export class AstraDbNode implements AstraDb {
       initOptions.blockstore,
       initOptions.publicIp,
       initOptions.tcpPort,
-      initOptions.wsPort,
-      initOptions.wssPort,
       initOptions.webRTCDirectPort,
       dataDir
     );

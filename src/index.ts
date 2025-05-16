@@ -75,24 +75,6 @@ export interface AstraDbInit {
   tcpPort?: number;
 
   /**
-   * The websocket port of the node. If astradb is running in a browser, this will be ignored.
-   *
-   * It is a TCP port.
-   *
-   * @default 40002
-   */
-  wsPort?: number;
-
-  /**
-   * The websocket secure port of the node. If astradb is running in a browser, this will be ignored.
-   *
-   * It is a TCP port.
-   *
-   * @default 40003
-   */
-  wssPort?: number;
-
-  /**
    * The WebRTC direct port of the node. If astradb is running in a browser, this will be ignored.
    *
    * It is a UDP port.
@@ -172,8 +154,6 @@ export async function createAstraDb(
   initOptions.blockstore = initOptions.blockstore ?? new MemoryBlockstore();
   initOptions.publicIp = initOptions.publicIp ?? "0.0.0.0";
   initOptions.tcpPort = initOptions.tcpPort ?? 40001;
-  initOptions.wsPort = initOptions.wsPort ?? 40002;
-  initOptions.wssPort = initOptions.wssPort ?? 40003;
   initOptions.webRTCDirectPort = initOptions.webRTCDirectPort ?? 40001;
   initOptions.dataDir = initOptions.dataDir ?? `./data`;
   initOptions.bootstrapProviderPeers = initOptions.bootstrapProviderPeers ?? [];
