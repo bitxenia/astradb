@@ -12,7 +12,6 @@ import {
   toString as uint8ArrayToString,
 } from "uint8arrays";
 import { privateKeyFromRaw } from "@libp2p/crypto/keys";
-import { bootstrap } from "@libp2p/bootstrap";
 
 const USER_ID = "user-id";
 
@@ -22,8 +21,6 @@ export const startOrbitDb = async (
   blockstore: Blockstore,
   publicIP: string,
   TcpPort: number,
-  WSPort: number,
-  WSSPort: number,
   WebRTCDirectPort: number,
   dataDir: string
 ) => {
@@ -39,13 +36,7 @@ export const startOrbitDb = async (
   if (isBrowser) {
     libp2pOptions = CreateLibp2pOptionsBrowser();
   } else {
-    libp2pOptions = CreateLibp2pOptions(
-      publicIP,
-      TcpPort,
-      WSPort,
-      WSSPort,
-      WebRTCDirectPort
-    );
+    libp2pOptions = CreateLibp2pOptions(publicIP, TcpPort, WebRTCDirectPort);
   }
 
   const libp2p = await createLibp2p({
