@@ -179,9 +179,7 @@ export class ConnectionManager {
       }
 
       console.log(`Connecting to provider: ${provider.id}`);
-
-      const multiaddrs = provider.multiaddrs.map((ma) => multiaddr(ma));
-      this.ipfs.libp2p.dial(multiaddrs).then(
+      this.ipfs.libp2p.dial(provider.multiaddrs).then(
         (conn) => {
           console.log(`Connected to provider ${provider.id}`);
         },
