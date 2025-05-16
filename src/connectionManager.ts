@@ -59,6 +59,10 @@ export class ConnectionManager {
       });
     }
 
+    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
+    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
+    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
+    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
     this.startService(async () => {
       await this.reconnectToProviders();
     }, 5000);
@@ -146,7 +150,9 @@ export class ConnectionManager {
   private async searchForProviders(): Promise<void> {
     // TODO: Check if we need to add a timeout.
     try {
-      let providers = this.ipfs.routing.findProviders(this.providerCID);
+      let providers = this.ipfs.libp2p.contentRouting.findProviders(
+        this.providerCID
+      );
       for await (const provider of providers) {
         const providerInfo: Provider = {
           id: provider.id,
