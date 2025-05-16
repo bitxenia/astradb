@@ -1,20 +1,33 @@
 import { noise } from "@chainsafe/libp2p-noise";
+import { tls } from "@libp2p/tls";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { delegatedHTTPRoutingDefaults } from "@helia/routers";
+import { autoNAT } from "@libp2p/autonat";
 import { bootstrap } from "@libp2p/bootstrap";
+import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
+import { dcutr } from "@libp2p/dcutr";
 import { identify, identifyPush } from "@libp2p/identify";
 import { kadDHT, removePrivateAddressesMapper } from "@libp2p/kad-dht";
 import { ping } from "@libp2p/ping";
 import { tcp } from "@libp2p/tcp";
-import { webRTCDirect } from "@libp2p/webrtc";
+import { uPnPNAT } from "@libp2p/upnp-nat";
+import { webRTC, webRTCDirect } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
+import { ipnsSelector } from "ipns/selector";
+import { ipnsValidator } from "ipns/validator";
+import * as filters from "@libp2p/websockets/filters";
+import { pubsubPeerDiscovery } from "@libp2p/pubsub-peer-discovery";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { webTransport } from "@libp2p/webtransport";
 import { keychain } from "@libp2p/keychain";
+import { autoTLS } from "@ipshipyard/libp2p-auto-tls";
 
 export function CreateLibp2pOptions(
   publicIP: string,
   TcpPort: number,
+  WSPort: number,
+  WSSPort: number,
   WebRTCDirectPort: number
 ) {
   let appendAnnounce: string[] = [];
@@ -22,6 +35,8 @@ export function CreateLibp2pOptions(
   if (publicIP != "0.0.0.0") {
     appendAnnounce = [
       `/ip4/${publicIP}/tcp/${TcpPort}`,
+      `/ip4/${publicIP}/tcp/${WSPort}/ws`,
+      `/ip4/${publicIP}/tcp/${WSSPort}/tls/ws`,
       `/ip4/${publicIP}/udp/${WebRTCDirectPort}/webrtc-direct`,
     ];
   }
@@ -31,16 +46,41 @@ export function CreateLibp2pOptions(
     addresses: {
       listen: [
         `/ip4/0.0.0.0/tcp/${TcpPort}`,
+        `/ip4/0.0.0.0/tcp/${WSPort}/ws`,
+        `/ip4/0.0.0.0/tcp/${WSSPort}/ws`,
         `/ip4/0.0.0.0/udp/${WebRTCDirectPort}/webrtc-direct`,
+        // "/p2p-circuit",
+        // "/webrtc",
       ],
       // Two websocket adresses are added for auto-tls to work.
       // Per: https://github.com/libp2p/js-libp2p/issues/2929
       // TODO: Append announce is only needed if upnp does not work. And ports are manually opened.
       appendAnnounce: appendAnnounce,
     },
-    transports: [tcp(), webRTCDirect(), webSockets()],
-    connectionEncrypters: [noise()],
+    transports: [
+      tcp(),
+      // circuitRelayTransport(),
+      // webRTC(),
+      webRTCDirect(),
+      // webTransport(),
+      webSockets(),
+    ],
+    connectionEncrypters: [
+      noise(),
+      // tls()
+    ],
     streamMuxers: [yamux()],
+    connectionGater: {
+      denyDialMultiaddr: () => false,
+    },
+    connectionManager: {
+      // With the latest version of libp2p the timeouts for stream upgrades seems to be too aggresive
+      // https://github.com/libp2p/js-libp2p/issues/2897#issuecomment-2674706509
+      inboundStreamProtocolNegotiationTimeout: 1e4,
+      inboundUpgradeTimeout: 1e4,
+      outboundStreamProtocolNegotiationTimeout: 1e4,
+      outboundUpgradeTimeout: 1e4,
+    },
     peerDiscovery: [
       bootstrap({
         list: [
@@ -60,6 +100,8 @@ export function CreateLibp2pOptions(
       pubsub: gossipsub({
         allowPublishToZeroTopicPeers: true,
       }),
+      autoNAT: autoNAT(),
+      dcutr: dcutr(),
       delegatedRouting: () =>
         createDelegatedRoutingV1HttpApiClient(
           "https://delegated-ipfs.dev",
@@ -72,11 +114,19 @@ export function CreateLibp2pOptions(
         // Server mode makes the node unable to receive connections, I think it is becuase it is always full.
         // We do not need server mode anyway.
         clientMode: true,
+        validators: {
+          ipns: ipnsValidator,
+        },
+        selectors: {
+          ipns: ipnsSelector,
+        },
       }),
       identify: identify(),
       identifyPush: identifyPush(),
       ping: ping(),
+      upnp: uPnPNAT(),
       keychain: keychain(),
+      autoTLS: autoTLS(),
     },
   };
 }
