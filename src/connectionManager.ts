@@ -141,7 +141,7 @@ export class ConnectionManager {
       }
       // Check if we are already connected.
       if (this.ipfs.libp2p.getConnections(provider.id).length > 0) {
-        console.log(`Already connected to provider: ${provider.id}`);
+        // console.log(`Already connected to provider: ${provider.id}`);
         return;
       }
 
@@ -157,12 +157,6 @@ export class ConnectionManager {
           console.error(
             `Error connecting to provider ${provider.id}: ${error}`
           );
-          if (this.connectedProviders.has(provider)) {
-            // console.log(
-            //   `Removing provider ${provider.id} from connected providers`
-            // );
-            this.connectedProviders.delete(provider);
-          }
         }
       );
     } catch (error) {
