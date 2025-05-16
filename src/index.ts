@@ -208,6 +208,13 @@ export interface AstraDb {
   getLoginPrivateKey: () => Promise<string>;
 
   /**
+   * Retrieves the public multiaddresses of the astradb node.
+   *
+   * This multiaddresses can be used as bootstrapProviderPeers from other nodes.
+   */
+  getNodeMultiaddrs: () => Promise<string[]>;
+
+  /**
    * Events emitted by the AstraDb.
    *
    * It can be used to listen for key append events.

@@ -12,6 +12,7 @@ import {
   toString as uint8ArrayToString,
 } from "uint8arrays";
 import { privateKeyFromRaw } from "@libp2p/crypto/keys";
+import { isPrivateIp } from "@libp2p/utils/private-ip";
 
 const USER_ID = "user-id";
 
@@ -108,6 +109,44 @@ export async function getPrivateKey(orbitdb: OrbitDB): Promise<string> {
 
 export function getPublicKey(orbitdb: OrbitDB): string {
   return orbitdb.identity.publicKey;
+}
+
+export function getPublicMultiaddrs(orbitdb: OrbitDB): string[] {
+  // https://github.com/libp2p/js-libp2p/blob/213a54a1e21fdceb84fd7c92a4f9d42441cfcea0/packages/kad-dht/src/utils.ts#L20
+  const multiaddrs = orbitdb.ipfs.libp2p
+    .getMultiaddrs()
+    .filter((multiaddr) => {
+      const [[type, addr]] = multiaddr.stringTuples();
+
+      // treat /dns, /dns4, and /dns6 addrs as public
+      if (type === 53 || type === 54 || type === 55) {
+        // localhost can be a dns address but it's private
+        if (addr === "localhost") {
+          return false;
+        }
+
+        return true;
+      }
+
+      if (type !== 4 && type !== 6) {
+        return false;
+      }
+
+      if (addr == null) {
+        return false;
+      }
+
+      const isPrivate = isPrivateIp(addr);
+
+      if (isPrivate == null) {
+        // not an ip address
+        return true;
+      }
+
+      return !isPrivate;
+    })
+    .map((multiaddr) => multiaddr.toString());
+  return multiaddrs;
 }
 
 async function CreateIdentities(
