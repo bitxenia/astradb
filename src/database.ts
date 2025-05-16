@@ -41,9 +41,9 @@ export class Database {
     await this.updateDatabase();
   }
 
-  public async initExisting(): Promise<boolean> {
+  public async initExisting(msTimeout: number): Promise<boolean> {
     await this.createDatabase();
-    const synced = await this.syncDb();
+    const synced = await this.syncDb(msTimeout);
     await this.setupDbEvents();
     await this.updateDatabase();
     return synced;
@@ -79,7 +79,7 @@ export class Database {
     this.openDb = db;
   }
 
-  private async syncDb(): Promise<boolean> {
+  private async syncDb(msTimeout: number): Promise<boolean> {
     // We wait for the database to be synced with at least one provider.
     // This is because the database is empty until it is synced.
     let synced = false;
@@ -98,7 +98,9 @@ export class Database {
     try {
       await this.waitFor(
         async () => synced,
-        async () => true
+        async () => true,
+        100,
+        msTimeout
       );
     } catch (error) {
       if (error instanceof SyncTimeoutError) {
@@ -116,8 +118,8 @@ export class Database {
   private async waitFor(
     valueA: any,
     toBeValueB: any,
-    pollInterval = 100,
-    timeout = 20000 // 20 seconds | TODO: see if this is enough
+    pollInterval: number,
+    timeout: number
   ): Promise<void> {
     // TODO: We use this slight modifided busy wait found in the OrbitDB codebase:
     // https://github.com/orbitdb/orbitdb/blob/main/test/utils/wait-for.js

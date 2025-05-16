@@ -38,7 +38,7 @@ export class KeyRepository {
 
     if (!this.isCollaborator && !offlineMode) {
       // If we are not a collaborator and we are not in offline mode, we open an existing database which sincronizes with the providers.
-      const synced = await this.keyDb.initExisting();
+      const synced = await this.keyDb.initExisting(60000);
       if (!synced) {
         // If we are not a collaborator and the db did not sync with the providers,
         // We throw an error because a non collaborator node cannot create a new astradb.
@@ -135,7 +135,7 @@ export class KeyRepository {
     valueDb = new Database(valueDbName, this.orbitdb, this.events);
     if (existing) {
       // If the database already exists, we open it and sync it.
-      await valueDb.initExisting();
+      await valueDb.initExisting(20000);
     } else {
       await valueDb.initNew();
     }
