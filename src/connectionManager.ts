@@ -2,6 +2,12 @@ import { HeliaLibp2p } from "helia";
 import { CID } from "multiformats/cid";
 import { Peer, PeerId } from "@libp2p/interface";
 import { UnixFS, unixfs } from "@helia/unixfs";
+import { multiaddr } from "@multiformats/multiaddr";
+
+interface Provider {
+  id: PeerId;
+  multiaddrs: string[];
+}
 
 export class ConnectionManager {
   private dbName: string;
@@ -9,11 +15,13 @@ export class ConnectionManager {
   private providerCID: CID;
   private fs: UnixFS;
   private protocol: string;
+  private connectedProviders: Set<Provider>;
 
   constructor(dbName: string, ipfs: HeliaLibp2p) {
     this.dbName = dbName;
     this.ipfs = ipfs;
     this.protocol = `/astradb/${this.dbName}`;
+    this.connectedProviders = new Set<Provider>();
   }
 
   public async init(isCollaborator: boolean) {
@@ -25,7 +33,7 @@ export class ConnectionManager {
     });
 
     this.startService(async () => {
-      await this.connectToProviders();
+      await this.searchForProviders();
     });
 
     // We only want to provide the database if we are a collaborator.
@@ -35,6 +43,14 @@ export class ConnectionManager {
         await this.provideDB(this.providerCID);
       });
     }
+
+    // TODO: searchForProviders & provideDB cause provider connection drops for some reason.
+    //       It seems that it is trying to connect again to the same provider, causing to drop the connection.
+    //       And it seems to happen with dht interactions. So that's why these two functions could be causing the issue.
+    //       That's why we are reconnecting to previously connected providers. See if we can improve this.
+    this.startService(async () => {
+      await this.reconnectToProviders();
+    }, 1000);
 
     this.setupEvents();
   }
@@ -92,46 +108,65 @@ export class ConnectionManager {
     }
   }
 
-  private async connectToProviders(): Promise<void> {
+  private async searchForProviders(): Promise<void> {
     // TODO: Check if we need to add a timeout.
     try {
       let providers = this.ipfs.libp2p.contentRouting.findProviders(
         this.providerCID
       );
       for await (const provider of providers) {
-        try {
-          // Check if the provider is us.
-          if (provider.id.equals(this.ipfs.libp2p.peerId)) {
-            // console.log("Provider is us, skipping...");
-            continue;
-          }
-          // Check if we are already connected.
-          if (this.ipfs.libp2p.getConnections(provider.id).length > 0) {
-            // console.log(`Already connected to provider: ${provider.id}`);
-            continue;
-          }
-
-          console.log(`New provider found, connecting: ${provider.id}`);
-
-          this.ipfs.libp2p.dial(provider.id).then(
-            (conn) => {
-              console.log(`Connected to provider ${provider.id}`);
-              this.manageNewConnection(provider.id);
-            },
-            (error) => {
-              console.error(
-                `Error connecting to provider ${provider.id}: ${error}`
-              );
-            }
-          );
-        } catch (error) {
-          console.error(
-            `Error connecting to provider ${provider.id}: ${error}`
-          );
-        }
+        const providerInfo: Provider = {
+          id: provider.id,
+          multiaddrs: provider.multiaddrs.map((ma) => ma.toString()),
+        };
+        await this.connectToProvider(providerInfo);
       }
     } catch (error) {
       console.error("Error finding providers:", error);
+    }
+  }
+
+  private async reconnectToProviders(): Promise<void> {
+    for (const provider of this.connectedProviders) {
+      await this.connectToProvider(provider);
+    }
+  }
+
+  private async connectToProvider(provider: Provider): Promise<void> {
+    try {
+      // Check if the provider is us.
+      if (provider.id.equals(this.ipfs.libp2p.peerId)) {
+        // console.log("Provider is us, skipping...");
+        return;
+      }
+      // Check if we are already connected.
+      if (this.ipfs.libp2p.getConnections(provider.id).length > 0) {
+        console.log(`Already connected to provider: ${provider.id}`);
+        return;
+      }
+
+      console.log(`New provider found, connecting: ${provider.id}`);
+
+      const multiaddrs = provider.multiaddrs.map((ma) => multiaddr(ma));
+      this.ipfs.libp2p.dial(multiaddrs).then(
+        (conn) => {
+          console.log(`Connected to provider ${provider.id}`);
+          this.manageNewConnection(provider.id);
+        },
+        (error) => {
+          console.error(
+            `Error connecting to provider ${provider.id}: ${error}`
+          );
+          if (this.connectedProviders.has(provider)) {
+            // console.log(
+            //   `Removing provider ${provider.id} from connected providers`
+            // );
+            this.connectedProviders.delete(provider);
+          }
+        }
+      );
+    } catch (error) {
+      console.error(`Error connecting to provider ${provider.id}: ${error}`);
     }
   }
 
@@ -173,6 +208,17 @@ export class ConnectionManager {
     }
     console.log(`Provider is an /astradb/${this.dbName} peer: ${peerId}`);
 
+    const provider: Provider = {
+      id: peerId,
+      multiaddrs: peerInfo.addresses.map((ma) => ma.toString()),
+    };
+
+    // Add the peer to the connected providers list.
+    if (!this.connectedProviders.has(provider)) {
+      // console.log(`Adding provider ${provider.id} to connected providers`);
+      this.connectedProviders.add(provider);
+    }
+
     // Tag the peer with a high priority to make sure we are connected to it.
     // https://github.com/libp2p/js-libp2p/blob/main/doc/LIMITS.md#closing-connections
     await this.ipfs.libp2p.peerStore.merge(peerId, {
@@ -184,7 +230,10 @@ export class ConnectionManager {
     });
   }
 
-  private async startService(serviceFunction: () => Promise<void>) {
+  private async startService(
+    serviceFunction: () => Promise<void>,
+    timeout: number = 60000
+  ) {
     // TODO: Find a better way to handle the service function. it should be stoppable.
     while (true) {
       try {
@@ -193,7 +242,7 @@ export class ConnectionManager {
         console.error("Error in service function:", error);
       }
       // Wait 60 seconds before running the service function again
-      await new Promise((resolve) => setTimeout(resolve, 60000));
+      await new Promise((resolve) => setTimeout(resolve, timeout));
     }
   }
 }
