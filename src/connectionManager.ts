@@ -11,14 +11,14 @@ export class ConnectionManager {
   private fs: UnixFS;
   private protocol: string;
   private providerProtocol: string;
-  private connectedProviders: Set<PeerId>;
+  private connectedProviders: Map<string, PeerId>;
 
   constructor(dbName: string, ipfs: HeliaLibp2p) {
     this.dbName = dbName;
     this.ipfs = ipfs;
     this.protocol = `/astradb/${this.dbName}`;
     this.providerProtocol = `/astradb/${this.dbName}/provider`;
-    this.connectedProviders = new Set<PeerId>();
+    this.connectedProviders = new Map<string, PeerId>();
   }
 
   public async init(isCollaborator: boolean, bootstrapProviderPeers: string[]) {
@@ -54,9 +54,10 @@ export class ConnectionManager {
       });
     }
 
+    // We start a service to reconnect to providers every 20 seconds.
     this.startService(async () => {
       await this.reconnectToProviders();
-    }, 5000);
+    }, 20000);
 
     this.setupEvents();
 
@@ -151,7 +152,7 @@ export class ConnectionManager {
   }
 
   private async reconnectToProviders(): Promise<void> {
-    for (const providerId of this.connectedProviders) {
+    for (const [_, providerId] of this.connectedProviders) {
       await this.connectToProvider(providerId);
     }
   }
@@ -227,7 +228,7 @@ export class ConnectionManager {
     if (peerInfo.protocols.includes(this.providerProtocol)) {
       console.log(`New connection is from a provider peer: ${peerId}`);
       // Add the peer to the connected providers.
-      this.connectedProviders.add(peerId);
+      this.connectedProviders.set(peerId.toString(), peerId);
     }
 
     // Tag the peer with a high priority to make sure we are connected to it.
