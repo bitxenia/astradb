@@ -1,6 +1,6 @@
 import { HeliaLibp2p } from "helia";
 import { CID } from "multiformats/cid";
-import { Peer, PeerId } from "@libp2p/interface";
+import { Peer, PeerId, isPeerId } from "@libp2p/interface";
 import { UnixFS, unixfs } from "@helia/unixfs";
 import { multiaddr } from "@multiformats/multiaddr";
 
@@ -54,10 +54,10 @@ export class ConnectionManager {
       });
     }
 
-    // We start a service to reconnect to providers every 20 seconds.
+    // We start a service to reconnect to providers every 15 seconds.
     this.startService(async () => {
       await this.reconnectToProviders();
-    }, 20000);
+    }, 15000);
 
     this.setupEvents();
 
@@ -159,6 +159,12 @@ export class ConnectionManager {
 
   private async connectToProvider(providerId: PeerId): Promise<void> {
     try {
+      // Check if the providerId is a valid PeerId.
+      if (!isPeerId(providerId)) {
+        // console.error(`Invalid provider ID: ${providerId}`);
+        return;
+      }
+
       // Check if the provider is us.
       if (providerId.equals(this.ipfs.libp2p.peerId)) {
         // console.log("Provider is us, skipping...");
