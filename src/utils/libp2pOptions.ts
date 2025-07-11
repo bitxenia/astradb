@@ -1,7 +1,5 @@
 import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
-import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
-import { delegatedHTTPRoutingDefaults } from "@helia/routers";
 import { bootstrap } from "@libp2p/bootstrap";
 import { identify, identifyPush } from "@libp2p/identify";
 import { kadDHT, removePrivateAddressesMapper } from "@libp2p/kad-dht";
@@ -60,11 +58,6 @@ export function CreateLibp2pOptions(
       pubsub: gossipsub({
         allowPublishToZeroTopicPeers: true,
       }),
-      delegatedRouting: () =>
-        createDelegatedRoutingV1HttpApiClient(
-          "https://delegated-ipfs.dev",
-          delegatedHTTPRoutingDefaults()
-        ),
       dht: kadDHT({
         // https://github.com/libp2p/js-libp2p/tree/main/packages/kad-dht#example---connecting-to-the-ipfs-amino-dht
         protocol: "/ipfs/kad/1.0.0",

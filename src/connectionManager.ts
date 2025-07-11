@@ -165,6 +165,19 @@ export class ConnectionManager {
         return;
       }
 
+      // Check if the providerId is from a gateway. We don't want to connect to gateways.
+      // It is a bug in the findProviders libp2p implementation that it returns gateways.
+      // PeerID: https://trustless-gateway.link/
+      if (providerId.toString() === "bagqbeaavnb2hi4dthixs6ndfozsxe3dbnzsc42lpf4") {
+        // console.log(`Provider is a gateway, skipping: ${providerId}`);
+        return;
+      }
+      // PeerID: https://4everland.io/
+      if (providerId.toString() === "bagqbeaa7nb2hi4dthixs65dsovzxi3dfonzs2z3borsxoylzfzwgs3tlf4") {
+        // console.log(`Provider is a gateway, skipping: ${providerId}`);
+        return;
+      }
+
       // Check if the provider is us.
       if (providerId.equals(this.ipfs.libp2p.peerId)) {
         // console.log("Provider is us, skipping...");
