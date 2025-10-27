@@ -1,12 +1,12 @@
 # AstraDB
 
-**AstraDB** is a distributed database infrastructure designed to power **dynamic, community-driven, and decentralized applications**.  
+**AstraDB** is a distributed database infrastructure designed to power **dynamic, community-driven, and decentralized applications**.
 Built as a higher-level layer over [OrbitDB](https://github.com/orbitdb/orbitdb) and [LibP2P](https://github.com/libp2p/js-libp2p), it provides the core mechanisms for **data synchronization**, **replication**, and **collaboration** between nodes in a peer-to-peer environment.
 
-Unlike traditional databases, AstraDB is specifically designed for **mutable-state applications** operating on top of [IPFS](https://ipfs.tech), such as knowledge repositories or real-time messaging systems.  
+Unlike traditional databases, AstraDB is specifically designed for **mutable-state applications** operating on top of [IPFS](https://ipfs.tech), such as knowledge repositories or real-time messaging systems.
 It automates the fundamental tasks required for decentralized operation — including **node discovery**, **eventual consistency**, and **data persistence** — allowing developers to build responsive and fault-tolerant systems without centralized servers.
 
-Each AstraDB instance behaves as a fully independent, self-replicating node that can interconnect with others to share data.  
+Each AstraDB instance behaves as a fully independent, self-replicating node that can interconnect with others to share data.
 Its **key–value event model** allows every entity (for example, an article or a chat) to evolve as a chronological sequence of updates, making it possible to reconstruct or audit any state at any point in time.
 
 This approach makes AstraDB ideal for applications that rely on **real-time collaboration** and **community ownership**, where users contribute directly to data availability and integrity.
