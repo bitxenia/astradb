@@ -39,6 +39,7 @@ npm install @bitxenia/astradb
 
 Using the `createAstradb` init function you can create and connect the node to a database.
 
+
 ```ts
 import { createAstradb } from "@bitxenia/astradb";
 
@@ -50,9 +51,45 @@ const keyList = await node.getAllKeys();
 console.log(keyList);
 ```
 
+### Add a Key and Value
+
+You can add a new value under a specific key.  
+Each addition is stored as a new event in the key’s history.
+
+
+```ts
+await node.add("article:001", "First version of the article");
+console.log("Value added successfully");
+```
+
+### Get Values from a Key
+
+Retrieve all stored values for a specific key.  
+Each value represents an event in the order it was added.
+
+```ts
+const values = await node.get("article:001");
+console.log(values);
+// → ["First version of the article"]
+```
+
+### Listen for Real-Time Updates
+
+AstraDB emits events whenever a new value is added to a key that was previously fetched.  
+The event name follows the format `{dbname}::{key}`.
+
+```ts
+const astraDb = await createAstradb({ dbName: "mydb" });
+const values = await astraDb.get("exampleKey");
+
+astraDb.events.on("mydb::exampleKey", async (value) => {
+  console.log(`New value for exampleKey: ${value}`);
+});
+```
+
 ## Documentation
 
-You can find more advanced topics, such as a detailed explanation of AstraDB’s architecture and internal components in our [docs](https://github.com/bitxenia/docs/tree/main/ipfs/application).
+You can find more advanced topics, such as a detailed explanation of AstraDB’s architecture and internal components, in our [docs](https://github.com/bitxenia/docs/tree/main/ipfs/application).
 
 ## Development
 
